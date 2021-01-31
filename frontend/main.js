@@ -1,26 +1,46 @@
-import * as THREE from './node_modules/three/build/three.module.js';
-import Stats from './node_modules/three/examples/jsm/libs/stats.module.js';
-import { GLTFLoader } from './node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 import { XRControllerModelFactory } from './node_modules/three/examples/jsm/webxr/XRControllerModelFactory.js';
 
 const enterVrButton = document.getElementById("enterVR");
 
-const playerHeight = new THREE.Vector3(0,1.8,0);
+const defaultMaterial = new CANNON.Material({
+    name: "default"
+});
+
+const playerMaterial = new CANNON.Material({
+    name: "player"
+});
+
+const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial,playerMaterial,{
+    friction: 0.01,
+    restitution: 0.0,
+});
+
+const playerHeight = new THREE.Vector3(0,0,0);
 const playerSpeed = 1.5;
 const highlightMaterial = new THREE.MeshBasicMaterial( { color: 0xffc100 } );
+
+const elevatorTravelDistance = 200;
+const elevatorAcceleration = 1;
+const elevatorTravelSpeed = 10;
+const elevatorParticleSquare = 10;
+const elevatorParticleHeight = 500;
+const elevatorParticlesCount = 40000;
+const elevatorParticleMaterial = new THREE.PointsMaterial({ color: 0x333333,size: 0.005});
 
 let stats, clock;
 let camera, scene, renderer;
 let xrSession, xrReferenceSpace;
-let user, pivot, marker, marker1;
+let user, pivot;
 let physicsWorld, playerBox, ground;
 let holding = {left:null,right:null};
 
 let iao = new Array();
+let elevators = new Array();
+
+let particleSystems = new Array();
 
 init();
-async function init() {
-
+function init() {
     //initialize
     scene = new THREE.Scene();
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 50);
@@ -32,13 +52,21 @@ async function init() {
     //physics
     physicsWorld = new CANNON.World();
     physicsWorld.gravity.set(0,-9.82,0);
+    physicsWorld.broadphase = new CANNON.NaiveBroadphase();
+    physicsWorld.solver.iterations = 20;
+    physicsWorld.solver.tolerance = 0;
+    physicsWorld.addContactMaterial(defaultContactMaterial);
 
     //initialize modules
-    const loader = new GLTFLoader();
+    const loader = new THREE.GLTFLoader();
     const controllerModelFactory = new XRControllerModelFactory();
 
     //scene settings
-    scene.background = new THREE.Color("#465461");
+    //scene.background = new THREE.Color("#465461");
+    scene.background = new THREE.Color("#000000");
+
+    //fog
+    scene.fog = new THREE.FogExp2(0xffffff,0.1);
 
     //add additional light to scene
     const hemiLight = new THREE.HemisphereLight(0xFFF9CC, 0xFFF9CC, 0.6);
@@ -49,35 +77,33 @@ async function init() {
     scene.add(user);
 
     //ground
-    let shape = new CANNON.Box(new CANNON.Vec3(10,0.1,10));
-    ground = new CANNON.Body({ mass: 0 });
+    let shape = new CANNON.Box(new CANNON.Vec3(2.25,0.1,2.25));
+    ground = new CANNON.Body({ mass: 500 , material: defaultMaterial });
     ground.addShape(shape,new CANNON.Vec3(0,-0.1,0));
+    ground.type = CANNON.Body.KINEMATIC;
     physicsWorld.addBody(ground);
     //testbox
     let shape2 = new CANNON.Box(new CANNON.Vec3(0.5,2,0.5));
     let testbox = new CANNON.Body({ mass: 0 });
     testbox.addShape(shape2,new CANNON.Vec3(0,1,0));
-    physicsWorld.addBody(testbox);
+    //physicsWorld.addBody(testbox);
 
     //add hitbox
-    let shape1 = new CANNON.Box(new CANNON.Vec3(0.2,1.8,0.2));
-    playerBox = new CANNON.Body({ mass: 65 });
-    playerBox.angularDamping=1;
-    playerBox.position.x = 5;
-    playerBox.position.y = 5;
-    playerBox.addShape(shape1,new CANNON.Vec3(0,1.8,0));
+    let shape1 = new CANNON.Box(new CANNON.Vec3(0.2,0.9,0.2));
+    playerBox = new CANNON.Body({ mass: 65 , material: playerMaterial});
+    playerBox.angularDamping = 1;
+    playerBox.type = CANNON.Body.DYNAMIC;
+    playerBox.position.y = 0.01;
+    playerBox.position.x = 0;
+    playerBox.addShape(shape1,new CANNON.Vec3(0,0.9,0));
     physicsWorld.addBody(playerBox);
+
 
     //pivot
     const geometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
     const material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
     pivot = new THREE.Mesh( geometry, material );
     scene.add(pivot);
-
-    marker = new THREE.Mesh( geometry, material );
-    scene.add(marker);
-    marker1 = new THREE.Mesh( geometry, material );
-    scene.add(marker1);
 
     //renderer settings
     renderer.xr.enabled = true;
@@ -160,13 +186,18 @@ async function init() {
         renderer.render(scene, camera);
 
         iao = scene.getObjectByUserDataProperty("interactable",1);
+        elevators = scene.getObjectByUserDataProperty("elevator",1);
+
+        setTimeout(function(){
+            //startElevatorTravel(elevators[0]);
+        },5000);
+        
 
         /*
         for(var obj of iao){
             physicsWorld.add obj
         }*/
 
-        console.log(iao);
         /*
         mixer = new THREE.AnimationMixer( model);
 
@@ -184,12 +215,6 @@ async function init() {
             if (node.isMesh) node.material.envMap = texture;
             if(node.isMesh) console.log(node);
         });*/
-
-        scene.traverse((node) => {
-            if (node.isMesh) selected.push(node);
-        });
-        
-        outline.selectedObjects = selected;
 
     }, function (xhr) {
     }, function () {
@@ -209,39 +234,142 @@ function findClipsByName(animations,names) {
     return ret;
 }
 
+var firstFrame = true;
 function drawFrame(frameTime,frame){
     stats.begin();
 
     const delta = clock.getDelta();
     const pose = frame.getViewerPose(xrReferenceSpace);
 
-    var nextFrameId = xrSession.requestAnimationFrame(drawFrame);
-
-    physicsWorld.step(delta);
-
-    if(pose){
-        if(xrSession) handleInputs(frame,delta,pose);
-        
-        renderer.render(scene, camera);
+    if(firstFrame){
+        //init delta
+        deltaPosition.copy(pose.transform.position);
+        firstFrame = false;
     }
 
+    var nextFrameId = xrSession.requestAnimationFrame(drawFrame);
+
+    //show pivot
+    pivot.position.copy(playerBox.position);
+    pivot.position.setY(playerBox.position.y + 1);
+
+    for (let c = 0; c < particleSystems.length; c++) {
+        for(var x = 0; x < particleSystems[c].geometry.vertices.length; x++){
+            if (particleSystems[c].geometry.vertices[x].y > (elevatorParticleHeight*0.5)) {
+                particleSystems[c].geometry.vertices[x].y = -(elevatorParticleHeight*0.5);
+            }
+            //particleSystems[c].geometry.vertices[x].y += elevatorTravelSpeed * delta;
+        }
+        particleSystems[c].geometry.verticesNeedUpdate = true;
+    }
+
+    //elevator
+    for (let c = 0; c < elevators.length; c++) {
+        if(elevators[c].userData.traveling){
+            //elevators[c].position.setY(elevators[c].position.y - elevatorTravelSpeed * delta);
+            //console.log(ground.velocity.y,ground.position.y)
+            if(elevators[c].userData.acceleration < elevatorTravelSpeed) elevators[c].userData.acceleration += elevatorAcceleration * delta;
+            elevators[c].userData.traveledDistance += elevators[c].userData.acceleration * delta;
+            ground.velocity.y = -elevators[c].userData.acceleration
+            console.log(elevators[c].userData.acceleration,elevators[c].userData.traveledDistance);
+            if(elevators[c].userData.traveledDistance > elevatorTravelDistance){
+                elevators[c].userData.traveling = false;
+            } 
+            elevators[c].position.setY(ground.position.y);
+            //console.log(elevators[c].position.y,elevators[c].userData.traveledDistance);
+            //console.log(elevators[c].userData.traveling,elevators[c].userData.traveledDistance)
+        }else{
+            ground.velocity.y = 0;
+        }
+        //ground.velocity.y = 0;
+    }
+
+    //match physics dummy with real player
+    
+
+    if(pose && xrSession){
+        handleInputs(frame,delta,pose);
+        handleInteractions(frame,delta,pose);
+        
+        console.log(playerBox.position)
+
+        updateAndMatchPhysics(delta,pose);
+
+        renderer.render(scene, camera);
+    }
     stats.end();
 }
 
-function transformToGlobalLocation(space){
-    const orientation = new THREE.Quaternion().copy(space.transform.orientation);
-    const rotatedRealPosition = (new THREE.Vector3().copy(space.transform.position)).applyQuaternion(user.quaternion);
-    const currentPosition = new THREE.Vector3().copy(user.position).add(rotatedRealPosition);
+function handleInteractions(frame,delta,pose){
+    for (const interactableObject of iao) {
+        if(interactableObject.materialKeep) interactableObject.material = interactableObject.materialKeep;
+    }
+    
+    let playerHeadSpace = transformToGlobalLocation(pose);
+    for (const source of xrSession.inputSources) {
+        if(source.targetRaySpace){
+            const targetRay = frame.getPose(source.targetRaySpace,xrReferenceSpace);
+            
+            //console.log(targetRay.transform.position);
+            if(targetRay){
+                const targetRaySpace = transformToGlobalLocation(targetRay);
 
-    return {orientation:orientation,currentPosition:currentPosition};
+                //show item
+                if(holding[source.handedness]) {
+                    holding[source.handedness].position.copy(targetRaySpace.currentPosition);
+                    holding[source.handedness].quaternion.copy(targetRaySpace.orientation);
+                }
+
+                for (const interactableObject of iao) {
+                    
+                    let distance = interactableObject.position.distanceTo(targetRaySpace.currentPosition);
+                    //marker.position.copy(targetRaySpace.currentPosition);
+                    let realPos = new THREE.Vector3();
+                    interactableObject.getWorldPosition(realPos);
+                    //marker1.position.copy(realPos);
+                    
+                    if(distance < 0.2 && !interactableObject.keepInteract) {
+                        interactableObject.materialKeep = interactableObject.material;
+                        interactableObject.material = highlightMaterial;
+                    }
+                } 
+            }
+        }
+    }
 }
 
-function moveVirtualPlayerToMatch(space, position){
-    const rotatedLocalPosition = (new THREE.Vector3().copy(space.transform.position)).applyQuaternion(user.quaternion);
-    const virtualPlayerPosition = new THREE.Vector3().copy(position).add(rotatedLocalPosition.negate());
+function startElevatorTravel(elevator){
+    elevator.userData.traveling = true;
+    elevator.userData.traveledDistance = 0;
+    elevator.userData.acceleration = 0;
+    //ground.type = CANNON.Body.DYNAMIC;
+    //ground.mass = 0;
+    //ground.updateMassProperties();
+    //ground.aabbNeedsUpdate = true;
 
-    user.position.copy(virtualPlayerPosition.add(playerHeight.negate()));
-} 
+    let particle = generateElevatorParticles(new THREE.Vector3());
+    
+    particleSystems.push(particle);
+    scene.add(particle);
+}
+
+function generateElevatorParticles(vec){
+    let particles = new THREE.Geometry();
+    //particles
+    for (var p = 0; p < elevatorParticlesCount; p++) {
+        // create a particle with random
+        var pX = Math.random() * elevatorParticleSquare - (elevatorParticleSquare*0.5),
+            pY = Math.random() * elevatorParticleHeight - (elevatorParticleHeight*0.5),
+            pZ = Math.random() * elevatorParticleSquare - (elevatorParticleSquare*0.5),
+            particle = new THREE.Vector3(pX, pY, pZ);
+            particle.add(vec);
+        // add it to the geometry
+        particles.vertices.push(particle);
+    }
+    let particleSystem = new THREE.Points(particles,elevatorParticleMaterial);
+    
+    return particleSystem;
+}
 
 function handleSelect(eve){
     const targetRay = eve.frame.getPose(eve.inputSource.targetRaySpace,xrReferenceSpace);
@@ -275,66 +403,13 @@ function handleSelectEnd(eve){
     } 
 }
 
-let deltaPosition = new THREE.Vector3();
-
 var timeout;
 var allowRotation = true;
 const rotationTimeout = 500;
 function handleInputs(frame,delta,pose){
     
-    //match current Playerposition to physical Position
-    moveVirtualPlayerToMatch(pose,playerBox.position);
-
-    //player Position in game
     let playerHeadSpace = transformToGlobalLocation(pose);
-    playerHeadSpace.currentPosition.add(playerHeight);
-
-    playerHeight.setY(pose.transform.position.y);
-    playerHeight.negate();
-    deltaPosition.add(new THREE.Vector3().copy(pose.transform.position).negate());
-    console.log("offset -->",deltaPosition);
-    user.position.add((new THREE.Vector3().copy(deltaPosition.negate())).applyQuaternion(user.quaternion));
-    deltaPosition.copy(pose.transform.position);
-
-    pivot.position.copy(playerHeadSpace.currentPosition);
-    pivot.position.setY(0.5);
-
-    
-    for (const interactableObject of iao) {
-        if(interactableObject.materialKeep && !interactableObject.keepInteract) interactableObject.material = interactableObject.materialKeep;
-    }
-
     for (const source of xrSession.inputSources) {
-        if(source.targetRaySpace){
-            const targetRay = frame.getPose(source.targetRaySpace,xrReferenceSpace);
-            
-            //console.log(targetRay.transform.position);
-            if(targetRay){
-                const targetRaySpace = transformToGlobalLocation(targetRay);
-
-                //show item
-                if(holding[source.handedness]) {
-                    holding[source.handedness].position.copy(targetRaySpace.currentPosition);
-                    holding[source.handedness].quaternion.copy(targetRaySpace.orientation);
-                }
-
-
-                for (const interactableObject of iao) {
-                    
-                    let distance = interactableObject.position.distanceTo(targetRaySpace.currentPosition);
-                    //marker.position.copy(targetRaySpace.currentPosition);
-                    let realPos = new THREE.Vector3();
-                    interactableObject.getWorldPosition(realPos);
-                    //marker1.position.copy(realPos);
-                    
-                    if(distance < 0.2 && !interactableObject.keepInteract) {
-                        interactableObject.materialKeep = interactableObject.material;
-                        interactableObject.material = highlightMaterial;
-                    }
-                } 
-            }
-        }
-
         const axes = source.gamepad.axes;
         if(source.handedness === "left"){
             if(axes[2] && axes[3]){
@@ -342,19 +417,20 @@ function handleInputs(frame,delta,pose){
                 var offsetPos = new THREE.Vector3(source.gamepad.axes[2],0,source.gamepad.axes[3]);
 
                 //apply passed time and playerSpeed
-                offsetPos.multiplyScalar(delta);
+                //offsetPos.multiplyScalar(delta);
                 offsetPos.multiplyScalar(playerSpeed);
                 
                 //apply head rotation and camera parent rotation
+                //const euler = new THREE.Euler().setFromQuaternion(playerHeadSpace.orientation);
+                //offsetPos.applyAxisAngle(new THREE.Vector3(0,1,0),euler.y);
+                //offsetPos.applyQuaternion(user.quaternion);
                 offsetPos.applyQuaternion(playerHeadSpace.orientation);
                 offsetPos.applyQuaternion(user.quaternion);
-                
-                //cancel all verticall movement
-                offsetPos.setY(0);
 
                 //apply movement
-                user.position.add(offsetPos);
-                //playerBox.applyForce(new CANNON.Vec3().copy(offsetPos),new CANNON.Vec3().copy(playerHeadSpace.currentPosition));
+                //user.position.add(offsetPos);
+                playerBox.velocity.x = offsetPos.x;
+                playerBox.velocity.z = offsetPos.z;
             }
         }else if(source.handedness === "right"){
             if(axes[2] && axes[3]){
@@ -375,13 +451,43 @@ function handleInputs(frame,delta,pose){
             }
         }
     }
-    //get changed Player position in game
-    playerHeadSpace = transformToGlobalLocation(pose);
-    playerHeadSpace.currentPosition.add(playerHeight);
-
-    //apply player Position to physics Dummy
-    playerBox.position.copy(playerHeadSpace.currentPosition);
 }
+
+let deltaPosition = new THREE.Vector3();
+function updateAndMatchPhysics(delta,pose){
+    //update physics world
+    physicsWorld.step(delta);
+
+    //get current Playe height
+    playerHeight.setY(pose.transform.position.y);
+
+    //calculate movement delta
+    deltaPosition.sub(pose.transform.position);
+    let rotatedDelta = new THREE.Vector3().copy(deltaPosition);
+    rotatedDelta.setY(0);
+    rotatedDelta.applyQuaternion(user.quaternion);
+    playerBox.position.vsub(rotatedDelta,playerBox.position);
+    //reset delta
+    deltaPosition.copy(pose.transform.position);
+
+    //match current Playerposition to physical Position
+    moveVirtualPlayerToMatch(pose,playerBox.position);
+}
+
+function transformToGlobalLocation(space){
+    const orientation = new THREE.Quaternion().copy(space.transform.orientation);
+    const rotatedRealPosition = (new THREE.Vector3().copy(space.transform.position)).applyQuaternion(user.quaternion);
+    const currentPosition = new THREE.Vector3().copy(user.position).add(rotatedRealPosition);
+
+    return {orientation:orientation,currentPosition:currentPosition};
+}
+
+function moveVirtualPlayerToMatch(space, position){
+    const rotatedLocalPosition = (new THREE.Vector3().copy(space.transform.position)).applyQuaternion(user.quaternion);
+    const virtualPlayerPosition = new THREE.Vector3().copy(position).add(rotatedLocalPosition.negate());
+
+    user.position.copy(virtualPlayerPosition.add(playerHeight));
+} 
 
 THREE.Object3D.prototype.getObjectByUserDataProperty = function ( name, value ) {
     var list = new Array();
