@@ -6,15 +6,15 @@ const LevelSchema = new mongoose.Schema({
         {
             modle: mongoose.ObjectId,
             position: {
-                X: mongoose.Decimal128,
-                Y: mongoose.Decimal128,
-                Z: mongoose.Decimal128
+                x: mongoose.Decimal128,
+                y: mongoose.Decimal128,
+                z: mongoose.Decimal128
             },
             rotation: {
-                X: mongoose.Decimal128,
-                Y: mongoose.Decimal128,
-                Z: mongoose.Decimal128,
-                W: mongoose.Decimal128
+                x: mongoose.Decimal128,
+                y: mongoose.Decimal128,
+                z: mongoose.Decimal128,
+                w: mongoose.Decimal128
             },
             attributes: [{
                 name: String,

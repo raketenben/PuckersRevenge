@@ -1,6 +1,10 @@
 const express = require('express')
+const bodyParser = require('body-parser')
+
 const app = express()
 const port = 3748
+
+app.use(bodyParser.json())
 
 const mongoose = require('mongoose');
 mongoose.connect('mongodb+srv://puckersRevenge:zero00zero@puckersrevenge.oczzm.mongodb.net/GameDev', {useNewUrlParser: true, useUnifiedTopology: true});
@@ -20,7 +24,7 @@ app.get('/api/level', async (req, res) => {
   })
 })
 app.post('/api/level', async (req, res) => {
-  const lev = new Level(req.params.payload);
+  const lev = new Level(req.body.payload);
   lev.save()
 })
 
@@ -31,12 +35,12 @@ app.get('/api/objects', async (req, res) => {
   })
 })
 app.post('/api/objects', async (req, res) => {
-  const obj = new Object(req.params.payload);
+  const obj = new Object(req.body.payload);
   obj.save()
 })
 
 app.get('/', (req, res) => {
-  res.send('Hello World3!')
+  res.send('This is a api you should not visit this page. <br><b>Go away!!!<b>')
 })
 
 app.listen(port, () => {
