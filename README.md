@@ -1,3 +1,3 @@
 # PuckersRevenge
  
-WebXR Game
+WebXR Game with mongodb and nodejs backend
