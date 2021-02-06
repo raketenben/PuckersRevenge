@@ -17,6 +17,10 @@ db.once('open', function() {
 const Level = mongoose.model('Level', require('./Schemas/Level'));
 const Object = mongoose.model('Object', require('./Schemas/Objects'));
 
+app.get('/toolbox', async (req, res) => {
+  res.sendFile(__dirname + "/public/index.html");
+})
+
 app.get('/api/level', async (req, res) => {
   Level.find(function (err, level) {
     if(err) return console.error(err)

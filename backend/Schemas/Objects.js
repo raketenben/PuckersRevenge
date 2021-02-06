@@ -2,6 +2,8 @@ const mongoose = require('mongoose')
 
 const ObjectSchema = new mongoose.Schema({
     modle: Buffer,
+    stats: Boolean,
+    physics: String,
     hitBoxes: [{
         stateName: String,
         bitBoxes: [{
