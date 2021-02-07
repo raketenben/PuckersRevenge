@@ -3,6 +3,7 @@ import HitboxGenerator from './lib/hitboxGenerator.js';
 import Hitboxes from "./hitboxes.js"
 
 const enterVrButton = document.getElementById("enterVR");
+const enterDesktopButton = document.getElementById("enterDesktop");
 const progressDisplay = document.getElementById("progress");
 
 if(navigator.xr){
@@ -29,16 +30,22 @@ enterVrButton.addEventListener("click",function(){
     }
 });
 
+enterDesktopButton.addEventListener("click",onDesktopStart);
+
 //physics materials
 const defaultMaterial = new CANNON.Material({ name: "default" });
 const playerMaterial = new CANNON.Material({ name: "player" });
 const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial,playerMaterial,{
-    friction: 0.01,
+    friction: 0.001,
     restitution: 0.0,
 });
 
+//desktop player settings
+const playerHeightDesktop = 1.55;
+const playerMouseSenseDesktop = (Math.PI/180)*0.25;
+
 //player settings
-const playerSpeed = 1.2;
+const playerSpeed = 1.5;
 const playerRotationTimeout = 350;
 const playerRotationAngle = (Math.PI/180) * 30;
 
@@ -48,15 +55,17 @@ const highlightMaterial = new THREE.MeshBasicMaterial( { color: 0xffc100 } );
 //LEVEL loading (travel)
 const elevatorTravelDistance = 100;
 const elevatorIntialVelocity = 0.05;
-const elevatorAcceleration = 1.01;
+const elevatorAcceleration = 1.04;
 const elevatorTravelSpeed = 5;
 const elevatorParticleSquare = 10;
 const elevatorParticleHeight = 500;
-const elevatorParticlesCount = 40000;
+const elevatorParticlesCount = 4000;
 const elevatorParticleMaterial = new THREE.PointsMaterial({ color: 0x333333,size: 0.005});
 
 const hitboxGenerator = new HitboxGenerator();
 const controllerModelFactory = new XRControllerModelFactory();
+
+const raycaster = new THREE.Raycaster();
 
 let playerHeight = new THREE.Vector3(0,0,0);
 
@@ -85,11 +94,11 @@ function init() {
     scene.background = new THREE.Color("#000000");
 
     //add additional light to scene
-    const hemiLight = new THREE.HemisphereLight(0xFFF9CC, 0x000000, 1);
+    const hemiLight = new THREE.HemisphereLight(0xFFF9CC, 0x000000, 5);
     scene.add(hemiLight);
 
     //add user to scene
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 10);
+    camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.01, 10);
     user = new THREE.Group();
     user.add(camera);
     scene.add(user);
@@ -177,11 +186,9 @@ function init() {
         
         mixer = new THREE.AnimationMixer( model);
  
-        const clips = findClipsByName(gltf.animations,['open1','open2','open3','open4']);
+        const clips = findClipsByName(gltf.animations,['open2','open3']);
         for (const i in clips) {
             let action = mixer.clipAction(clips[i]);
-            
-            console.log(clips[i]);
             action.clampWhenFinished = true;
             action.setLoop(THREE.LoopOnce);
             action.play();
@@ -189,13 +196,21 @@ function init() {
 
         setTimeout(function(){
             startElevatorTravel(elevators[0]);
-        },15000);
+        },5000);
 
     }, function (xhr) {
         let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
         progressDisplay.innerHTML = progress+" %";
     }, function () {
     });
+}
+
+window.addEventListener( 'resize', onWindowResize, false );
+function onWindowResize(){
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+
+    renderer.setSize( window.innerWidth, window.innerHeight );
 }
 
 function sessionStarted(event){
@@ -222,6 +237,117 @@ function sessionStarted(event){
 
     //xrSession.requestAnimationFrame(firstFrameDraw);
     renderer.setAnimationLoop(drawFrame);
+}
+
+let pointerLockState = false;
+function onDesktopStart(){
+    document.getElementById("ui").classList.add("hidden")
+    camera.position.y = playerHeightDesktop;
+    
+    document.addEventListener('pointerlockchange', pointerLockChanged, false);
+
+    renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock;
+    renderer.domElement.requestPointerLock();
+
+    document.addEventListener("mousemove",  handleMousemovementDesktop, false);
+    document.addEventListener('keydown', handleKeyDownDesktop, false);
+    document.addEventListener('keyup', handleKeyUpDesktop, false);
+    document.addEventListener("click",  recaptureMouse, false);
+
+    renderer.setAnimationLoop(drawDesktopFrame);
+}
+
+function pointerLockChanged(){
+    if(document.pointerLockElement === renderer.domElement){
+        pointerLockState = true;
+    }else{
+        pointerLockState = false;
+    }
+}
+
+function recaptureMouse(){
+    renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock;
+    renderer.domElement.requestPointerLock();
+}
+
+let leftPressState = false;
+let rightPressState = false;
+let upPressState = false;
+let downPressState = false;
+function handleKeyDownDesktop(e){
+    switch(e.keyCode){
+        case 65:
+        leftPressState = true;
+        break;
+        case 68:
+        rightPressState = true;
+        break;
+        case 87:
+        upPressState = true;
+        break;
+        case 83:
+        downPressState = true;
+        break;
+    }
+}
+
+function handleKeyUpDesktop(e){
+    switch(e.keyCode){
+        case 65:
+        leftPressState = false;
+        break;
+        case 68:
+        rightPressState = false;
+        break;
+        case 87:
+        upPressState = false;
+        break;
+        case 83:
+        downPressState = false;
+        break;
+    }
+    
+}
+
+function handleInteractionsDesktop(v){
+    raycaster.setFromCamera(new THREE.Vector2(),camera);
+    const objects = raycaster.intersectObjects( scene.children );
+
+    for (const hit of objects) {
+        //console.log(hit.object);
+    }
+}
+
+let playerDesktopView = [0,0];
+function handleMousemovementDesktop(e){
+    if(pointerLockState == true) {
+        playerDesktopView[0] -= e.movementX * playerMouseSenseDesktop;
+        if(
+            playerDesktopView[1] - e.movementY * playerMouseSenseDesktop < Math.PI/2 && 
+            playerDesktopView[1] - e.movementY * playerMouseSenseDesktop > -Math.PI/2
+        ) playerDesktopView[1] -= e.movementY * playerMouseSenseDesktop;
+    
+        const euler = new THREE.Euler(0, 0, 0, 'YXZ');
+        euler.x = playerDesktopView[1];
+        euler.y = playerDesktopView[0];
+        camera.quaternion.setFromEuler(euler);
+    }
+}
+
+function handleInputsDesktop(){
+    //get gamepad input
+    offsetPos.set((leftPressState ? -1 : (rightPressState ? 1 : 0)),0,(upPressState ? -1 : (downPressState ? 1 : 0)));
+
+    //apply playerSpeed
+    offsetPos.multiplyScalar(playerSpeed);
+    
+    //apply head rotation and camera parent rotation
+    offsetPos.applyQuaternion(camera.quaternion);
+    //offsetPos.applyQuaternion(user.quaternion);
+
+    //apply movement
+    playerBox.velocity.x = offsetPos.x;
+    playerBox.velocity.z = offsetPos.z;
 }
 
 function findClipsByName(animations,names) {
@@ -258,6 +384,7 @@ function drawFrame(frameTime,frame){
     delta = clock.getDelta();
     pose = frame.getViewerPose(xrReferenceSpace);
 
+    //animations
 	mixer.update( delta);
 
     handleElevators(frame,delta,pose);
@@ -267,10 +394,31 @@ function drawFrame(frameTime,frame){
 
     updateAndMatchPhysics(delta,pose);
 
-    // cannonDebug.update();
+    //cannonDebug.update();
 
     renderer.render(scene, camera);
+    stats.end();
+}
 
+function drawDesktopFrame(frameTime,frame){
+    stats.begin();
+
+    delta = clock.getDelta();
+    pose = {transform:{position:{x:0,y:playerHeightDesktop,z:0}}};
+
+    //animations
+	mixer.update(delta);
+
+    handleElevators(frame,delta,pose);
+
+    if(pointerLockState == true) handleInputsDesktop(frame,delta);
+    handleInteractionsDesktop(frame,delta);
+
+    updateAndMatchPhysics(delta,pose);
+
+    //cannonDebug.update();
+
+    renderer.render(scene, camera);
     stats.end();
 }
 
@@ -292,14 +440,13 @@ function handleElevators(frame,delta,pose){
             if(elevators[c].userData.acceleration < elevatorTravelSpeed) elevators[c].userData.acceleration *= elevatorAcceleration;
             elevators[c].userData.traveledDistance += elevators[c].userData.acceleration * delta;
             testChamber.velocity.y = -elevators[c].userData.acceleration;
-            console.log(elevators[c].userData.acceleration,elevators[c].userData.traveledDistance);
             if(elevators[c].userData.traveledDistance > elevatorTravelDistance){
                 elevators[c].userData.traveling = false;
             } 
-            elevators[c].position.copy(testChamber.position);
         }else{
             testChamber.velocity.y = 0;
         }
+        elevators[c].position.copy(testChamber.position);
     }
 }
 

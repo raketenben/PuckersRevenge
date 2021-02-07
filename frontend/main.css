@@ -46,3 +46,15 @@ html, body, canvas {
     color: red;
     border-color: red;
 }
+
+.hidden {
+    display:none;
+}
+
+.crosshair {
+    position: absolute;
+    width: 4%;
+    height: 4%;
+    left: 48%;;
+    top: 48%;
+}
