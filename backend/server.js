@@ -1,10 +1,12 @@
 const express = require('express')
 const bodyParser = require('body-parser')
+const cors = require('cors')
 
 const app = express()
 const port = 3748
 
 app.use(bodyParser.json())
+app.use(cors())
 
 const mongoose = require('mongoose');
 mongoose.connect('mongodb+srv://puckersRevenge:zero00zero@puckersrevenge.oczzm.mongodb.net/GameDev', {useNewUrlParser: true, useUnifiedTopology: true});
