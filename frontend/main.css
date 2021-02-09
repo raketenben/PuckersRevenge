@@ -53,8 +53,8 @@ html, body, canvas {
 
 .crosshair {
     position: absolute;
-    width: 4%;
-    height: 4%;
-    left: 48%;;
-    top: 48%;
+    width: 2%;
+    height: 2%;
+    left: 49%;;
+    top: 49%;
 }

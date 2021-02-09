@@ -1,6 +1,7 @@
 import { XRControllerModelFactory } from './node_modules/three/examples/jsm/webxr/XRControllerModelFactory.js';
+import LevelLoader from './lib/levelLoader.js';
 import HitboxGenerator from './lib/hitboxGenerator.js';
-import Hitboxes from "./hitboxes.js"
+import Hitboxes from "./hitboxes.js";
 
 const enterVrButton = document.getElementById("enterVR");
 const enterDesktopButton = document.getElementById("enterDesktop");
@@ -36,7 +37,7 @@ enterDesktopButton.addEventListener("click",onDesktopStart);
 const defaultMaterial = new CANNON.Material({ name: "default" });
 const playerMaterial = new CANNON.Material({ name: "player" });
 const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial,playerMaterial,{
-    friction: 0.001,
+    friction: 0.01,
     restitution: 0.0,
 });
 
@@ -46,6 +47,8 @@ const playerMouseSenseDesktop = (Math.PI/180)*0.25;
 
 //player settings
 const playerSpeed = 1.5;
+const playerSprintFactor = 1;
+const playerZoomFactorDektop = 4;
 const playerRotationTimeout = 350;
 const playerRotationAngle = (Math.PI/180) * 30;
 
@@ -72,9 +75,12 @@ let playerHeight = new THREE.Vector3(0,0,0);
 let stats, clock;
 let camera, camera1, scene, renderer;
 let xrSession, xrReferenceSpace;
-let user, pivot;
+let user;
 let physicsWorld, playerBox, testChamber;
 let holding = {left:null,right:null};
+
+let textureLoader;
+let levelLoader;
 
 let cannonDebug;
 
@@ -94,7 +100,7 @@ function init() {
     scene.background = new THREE.Color("#000000");
 
     //add additional light to scene
-    const hemiLight = new THREE.HemisphereLight(0xFFF9CC, 0x000000, 5);
+    const hemiLight = new THREE.HemisphereLight(0xFFF9CC, 0x000000, 4);
     scene.add(hemiLight);
 
     //add user to scene
@@ -110,6 +116,17 @@ function init() {
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.physicallyCorrectLights = true;
     renderer.outputEncoding = THREE.sRGBEncoding;
+
+    //loader
+    levelLoader = new LevelLoader();
+    levelLoader.load("test",(data) => {
+        console.log(data);
+    },(prog) => {
+        console.info(prog)
+    },(err) => {
+        console.log(err)
+    })
+    textureLoader = new THREE.TextureLoader();
 
     //physics
     physicsWorld = new CANNON.World();
@@ -155,9 +172,6 @@ function init() {
     //pivot
     const geometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
     const material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-    pivot = new THREE.Mesh( geometry, material );
-    scene.add(pivot);
-
 
     //show canvas
     document.body.appendChild(renderer.domElement);
@@ -167,43 +181,55 @@ function init() {
 
     renderer.xr.addEventListener('sessionstart', sessionStarted);
 
-    renderer.xr.addEventListener('sessionend', function (event) {
-        xrSession = null;
-        enterVrButton.innerHTML = "Enter VR";
-        renderer.setAnimationLoop(null);
-    });
+    renderer.xr.addEventListener('sessionend', sessionEnded);
 
-    //load scene
-    loader.load('./public/elevator-chamber.glb', (gltf) => {
-        var model = gltf.scene;
-        scene.add(model);
-        console.log(gltf);
-        camera1 = gltf.cameras[0];
-        renderer.render(scene, camera1);
+    textureLoader.load('./assets/elevator/env.png',function(tex){
+        //load scene
+        loader.load('./assets/elevator/model.glb', (gltf) => {
+            var model = gltf.scene;
+            scene.add(model);
+            console.log(gltf);
+            camera1 = gltf.cameras[0];
+    
+            iao = scene.getObjectByUserDataProperty("interactable",1);
+            elevators = scene.getObjectByUserDataProperty("elevator",1);
+            
+            mixer = new THREE.AnimationMixer(model);
+     
+            const clips = findClipsByName(gltf.animations,['open1','open4']);
+            for (const i in clips) {
+                let action = mixer.clipAction(clips[i]);
+                action.clampWhenFinished = true;
+                action.setLoop(THREE.LoopOnce);
+                action.play();
+            }
+    
+            setTimeout(function(){
+                //startElevatorTravel(elevators[0]);
+            },5000);
 
-        iao = scene.getObjectByUserDataProperty("interactable",1);
-        elevators = scene.getObjectByUserDataProperty("elevator",1);
-        
-        mixer = new THREE.AnimationMixer( model);
- 
-        const clips = findClipsByName(gltf.animations,['open2','open3']);
-        for (const i in clips) {
-            let action = mixer.clipAction(clips[i]);
-            action.clampWhenFinished = true;
-            action.setLoop(THREE.LoopOnce);
-            action.play();
-        }
+            var cubeRenderTarget = new THREE.WebGLCubeRenderTarget( 1024 ).fromEquirectangularTexture( renderer, tex );
+            scene.traverse((node) => {
+                if (node.isMesh) node.material.envMap = cubeRenderTarget.texture;
+            });
 
-        setTimeout(function(){
-            startElevatorTravel(elevators[0]);
-        },5000);
+            renderer.render(scene, camera1);
 
-    }, function (xhr) {
-        let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
-        progressDisplay.innerHTML = progress+" %";
-    }, function () {
+    
+        }, function (xhr) {
+            let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
+            progressDisplay.innerHTML = progress+" %";
+        }, function (err) {
+            console.error(err)
+        });
     });
 }
+
+document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState === 'visible') {
+        clock.getDelta();
+    }
+});
 
 window.addEventListener( 'resize', onWindowResize, false );
 function onWindowResize(){
@@ -211,6 +237,12 @@ function onWindowResize(){
     camera.updateProjectionMatrix();
 
     renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function sessionEnded(){
+    xrSession = null;
+    enterVrButton.innerHTML = "Enter VR";
+    renderer.setAnimationLoop(null);
 }
 
 function sessionStarted(event){
@@ -270,43 +302,57 @@ function recaptureMouse(){
     renderer.domElement.requestPointerLock();
 }
 
+let sprintPressState = false;
 let leftPressState = false;
 let rightPressState = false;
 let upPressState = false;
 let downPressState = false;
 function handleKeyDownDesktop(e){
-    switch(e.keyCode){
-        case 65:
-        leftPressState = true;
+    switch(e.key){
+        case "a":
+            leftPressState = true;
         break;
-        case 68:
-        rightPressState = true;
+        case "d":
+            rightPressState = true;
         break;
-        case 87:
-        upPressState = true;
+        case "w":
+            upPressState = true;
         break;
-        case 83:
-        downPressState = true;
+        case "s":
+            downPressState = true;
+        break;
+        case "Control":
+            sprintPressState = true;
+        break;
+        case "c":
+            camera.zoom = playerZoomFactorDektop;
+            camera.updateProjectionMatrix();
         break;
     }
 }
 
 function handleKeyUpDesktop(e){
-    switch(e.keyCode){
-        case 65:
-        leftPressState = false;
+    switch(e.key){
+        case "a":
+            leftPressState = false;
         break;
-        case 68:
-        rightPressState = false;
+        case "d":
+            rightPressState = false;
         break;
-        case 87:
-        upPressState = false;
+        case "w":
+            upPressState = false;
         break;
-        case 83:
-        downPressState = false;
+        case "s":
+            downPressState = false;
+        break;
+        case "Control":
+            sprintPressState = false;
+        break;
+        case "c":
+            camera.zoom = 1;
+            camera.updateProjectionMatrix();
         break;
     }
-    
 }
 
 function handleInteractionsDesktop(v){
@@ -340,6 +386,7 @@ function handleInputsDesktop(){
 
     //apply playerSpeed
     offsetPos.multiplyScalar(playerSpeed);
+    if(sprintPressState) offsetPos.multiplyScalar(playerSprintFactor);
     
     //apply head rotation and camera parent rotation
     offsetPos.applyQuaternion(camera.quaternion);
@@ -357,16 +404,6 @@ function findClipsByName(animations,names) {
         if(clip) ret.push(clip);
     }
     return ret;
-}
-
-function firstFrameDraw(frameTime,frame){
-    xrSession.requestAnimationFrame(drawFrame);
-    const pose = frame.getViewerPose(xrReferenceSpace);
-    if(firstFrame){
-        //init delta
-        deltaPosition.copy(pose.transform.position);
-        firstFrame = false;
-    }
 }
 
 let firstFrame = true;
