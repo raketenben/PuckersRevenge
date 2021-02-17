@@ -74,7 +74,7 @@ class levelLoader {
     }
 
     loadLevelFile(levelName,res,rej){
-        fetch(`http://127.0.0.1:1337/levels/${levelName}.json`)
+        fetch(`/levels/${levelName}.json`)
         .then(response => response.json())
         .then(res,rej);
     }
