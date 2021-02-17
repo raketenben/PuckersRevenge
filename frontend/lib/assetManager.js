@@ -86,11 +86,11 @@ class assetManager {
         let currentTotal = 0;
         let previousTotal = 0;
         let loaded = 0;
-        this.downloadAsBlob(`http://127.0.0.1:1337/assets/${objectName}/model.glb`,(model) => {
+        this.downloadAsBlob(`/assets/${objectName}/model.glb`,(model) => {
             previousTotal = currentTotal;
-            this.downloadAsBlob(`http://127.0.0.1:1337/assets/${objectName}/env.png`,(enviroment) => {
+            this.downloadAsBlob(`/assets/${objectName}/env.png`,(enviroment) => {
                 previousTotal = currentTotal;
-                this.downloadAsBlob(`http://127.0.0.1:1337/assets/${objectName}/hitbox.json`,(hitbox) => {
+                this.downloadAsBlob(`/assets/${objectName}/hitbox.json`,(hitbox) => {
                     res({name:objectName,env:enviroment,object:model,hitbox:hitbox})
                 },(progress) => {
                     currentTotal = previousTotal + progress.total;
