@@ -65,6 +65,7 @@ const elevatorParticleHeight = 500;
 const elevatorParticlesCount = 4000;
 const elevatorParticleMaterial = new THREE.PointsMaterial({ color: 0x333333,size: 0.005});
 
+const levelLoader = new LevelLoader();
 const hitboxGenerator = new HitboxGenerator();
 const controllerModelFactory = new XRControllerModelFactory();
 
@@ -80,7 +81,6 @@ let physicsWorld, playerBox, testChamber;
 let holding = {left:null,right:null};
 
 let textureLoader;
-let levelLoader;
 
 let cannonDebug;
 
@@ -117,25 +117,17 @@ function init() {
     renderer.physicallyCorrectLights = true;
     renderer.outputEncoding = THREE.sRGBEncoding;
 
-    //loader
-    levelLoader = new LevelLoader();
-    levelLoader.load("test",(data) => {
-        console.log(data);
-    },(prog) => {
-        console.info(prog)
-    },(err) => {
-        console.log(err)
-    })
     textureLoader = new THREE.TextureLoader();
 
     //physics
     physicsWorld = new CANNON.World();
     physicsWorld.gravity.set(0,-9.82,0);
     physicsWorld.broadphase = new CANNON.NaiveBroadphase();
+    physicsWorld.defaultContactMaterial = defaultContactMaterial;
     physicsWorld.addContactMaterial(defaultContactMaterial);
     //physicsWorld.solver.iterations = 20;
     //physicsWorld.solver.tolerance = 0;
-
+/*
     //ground
     let ground = new CANNON.Body({ mass: 0 , material: defaultMaterial });
     hitboxGenerator.createFromJSON(ground,Hitboxes.ground);
@@ -146,7 +138,7 @@ function init() {
     testChamber = new CANNON.Body({ mass: 0 , material: defaultMaterial });
     hitboxGenerator.createFromJSON(testChamber,Hitboxes.elevator);
     testChamber.type = CANNON.Body.KINEMATIC;
-    physicsWorld.addBody(testChamber);
+    physicsWorld.addBody(testChamber);*/
 
     //add hitbox
     let shape1 = new CANNON.Sphere(0.15);
@@ -180,9 +172,20 @@ function init() {
     document.body.appendChild(stats.domElement);
 
     renderer.xr.addEventListener('sessionstart', sessionStarted);
-
     renderer.xr.addEventListener('sessionend', sessionEnded);
 
+    //loader
+    levelLoader.init(scene,renderer,physicsWorld).then(() => {
+        levelLoader.load("test1",(data) => {
+            console.log("finished loading");
+            renderer.render(scene, camera);
+        },(prog) => {
+            console.info(prog)
+        },(err) => {
+            console.error(err)
+        })
+    })
+    /*
     textureLoader.load('./assets/elevator/env.png',function(tex){
         //load scene
         loader.load('./assets/elevator/model.glb', (gltf) => {
@@ -196,7 +199,7 @@ function init() {
             
             mixer = new THREE.AnimationMixer(model);
      
-            const clips = findClipsByName(gltf.animations,['open1','open4']);
+            const clips = findClipsByName(gltf.animations,['close1','close2']);
             for (const i in clips) {
                 let action = mixer.clipAction(clips[i]);
                 action.clampWhenFinished = true;
@@ -205,7 +208,7 @@ function init() {
             }
     
             setTimeout(function(){
-                //startElevatorTravel(elevators[0]);
+                startElevatorTravel(elevators[0]);
             },5000);
 
             var cubeRenderTarget = new THREE.WebGLCubeRenderTarget( 1024 ).fromEquirectangularTexture( renderer, tex );
@@ -222,7 +225,7 @@ function init() {
         }, function (err) {
             console.error(err)
         });
-    });
+    });*/
 }
 
 document.addEventListener("visibilitychange", function() {
@@ -422,7 +425,7 @@ function drawFrame(frameTime,frame){
     pose = frame.getViewerPose(xrReferenceSpace);
 
     //animations
-	mixer.update( delta);
+	//mixer.update( delta);
 
     handleElevators(frame,delta,pose);
     
@@ -444,7 +447,7 @@ function drawDesktopFrame(frameTime,frame){
     pose = {transform:{position:{x:0,y:playerHeightDesktop,z:0}}};
 
     //animations
-	mixer.update(delta);
+	//mixer.update(delta);
 
     handleElevators(frame,delta,pose);
 

@@ -1,3 +1,5 @@
+const defaultMaterial = new CANNON.Material({ name: "default" });
+
 class hitboxGenerator {
     constructor(){
         return this;
@@ -8,7 +10,27 @@ class hitboxGenerator {
     offset = new CANNON.Vec3();
     orientation = new CANNON.Quaternion();
 
-    createFromJSON(obj,json){
+    bodyFromJSON(json){
+        let body = new CANNON.Body({ mass: json.mass, material: defaultMaterial});
+        switch(json.type){
+            case "static":
+                body.type = CANNON.Body.STATIC;
+                break;
+            case "kinematic":
+                body.type = CANNON.Body.KINEMATIC;
+                break;
+            case "dynamic":
+                body.type = CANNON.Body.DYNAMIC;
+                break;
+            default:
+                body.type = CANNON.Body.STATIC;
+                console.warn(`${json.type} is not a valid type`);
+        }
+        this.shapeFromJSON(body,json.shapes);
+        return body;
+    }
+
+    shapeFromJSON(obj,json){
         if(typeof json === 'string' || json instanceof String) json = JSON.parse(json);
         for (const shapeData of json) {
             let size = new CANNON.Vec3(shapeData.size.x,shapeData.size.y,shapeData.size.z);
