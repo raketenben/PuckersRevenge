@@ -1,5 +1,5 @@
 const databaseName = "PuckersRevenge";
-const databaseVersion = 1;
+const databaseVersion = 2;
 const objectStoreName = "assets";
 const objectStoreKeyName = "name";
 
@@ -18,6 +18,9 @@ class assetManager {
             }
             request.onupgradeneeded = (event) => {
                 let _db = event.target.result;
+                if(_db.objectStoreNames.contains(objectStoreName)){
+                    _db.deleteObjectStore(objectStoreName);
+                }
                 _db.createObjectStore(objectStoreName, { keyPath: objectStoreKeyName });
             }
             request.onsuccess = (event) => {
@@ -90,7 +93,7 @@ class assetManager {
             previousTotal = currentTotal;
             this.downloadAsBlob(`/assets/${objectName}/env.png`,(enviroment) => {
                 previousTotal = currentTotal;
-                this.downloadAsBlob(`/assets/${objectName}/hitbox.json`,(hitbox) => {
+                this.downloadAsBlob(`/assets/${objectName}/hitbox.hitbox`,(hitbox) => {
                     res({name:objectName,env:enviroment,object:model,hitbox:hitbox})
                 },(progress) => {
                     currentTotal = previousTotal + progress.total;

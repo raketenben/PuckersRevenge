@@ -37,18 +37,21 @@ class levelLoader {
                     fetch(asset.hitbox)
                     .then(response => response.json())
                     .then(hitbox => {
+                        console.log(gltf)
                         //apply env map
                         var cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024).fromEquirectangularTexture( this.renderer, texture );
                         gltf.scene.traverse((node) => {
                             if (node.isMesh) node.material.envMap = cubeRenderTarget.texture;
                         });
-                        //get preview camera
-                        //var camera1 =  gltf.cameras[0];
     
                         //add hitbox
                         let body = this.hitboxGenerator.bodyFromJSON(hitbox);
+                        body.position.copy(object.position)
                         this.physicsWorld.addBody(body);
-    
+
+                        gltf.scene.position.copy(object.position)
+                        gltf.scene.userData.imposter = body;
+
                         //add object to scene
                         this.scene.add( gltf.scene)
     
@@ -74,7 +77,7 @@ class levelLoader {
                     loaded++;
                     if(loaded == total) {
                         sendProgressUpdate({total:1,loaded:1,tag:"finished"})
-                        return res();
+                        return res(levelFile);
                     }else
                         nextLoad()
                 },(xhr) => {

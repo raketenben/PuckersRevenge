@@ -1,21 +1,23 @@
 import { XRControllerModelFactory } from './node_modules/three/examples/jsm/webxr/XRControllerModelFactory.js';
 import LevelLoader from './lib/levelLoader.js';
-import HitboxGenerator from './lib/hitboxGenerator.js';
-import Hitboxes from "./hitboxes.js";
 
 const enterVrButton = document.getElementById("enterVR");
 const enterDesktopButton = document.getElementById("enterDesktop");
 const progressDisplay = document.getElementById("progress");
 
-if(navigator.xr){
-    navigator.xr.isSessionSupported( 'immersive-vr' ).then( function ( supported ) {
-        if(!supported){
-            enterVrButton.innerHTML = "VR not supported";
-            enterVrButton.classList.add("disabled");
-        }
-    });
-}else{
-    enterVrButton.innerHTML = "VR not supported";
+function updateButtons(){
+    if(navigator.xr){
+        navigator.xr.isSessionSupported( 'immersive-vr' ).then( function ( supported ) {
+            if(supported){
+                enterVrButton.classList.remove("hidden");
+            }else{
+                enterVrButton.innerHTML = "VR not supported";
+                enterDesktopButton.classList.remove("hidden");
+            }
+        });
+    }else{
+        enterVrButton.innerHTML = "VR not supported";
+    }
 }
 
 //xr session events   
@@ -66,7 +68,6 @@ const elevatorParticlesCount = 4000;
 const elevatorParticleMaterial = new THREE.PointsMaterial({ color: 0x333333,size: 0.005});
 
 const levelLoader = new LevelLoader();
-const hitboxGenerator = new HitboxGenerator();
 const controllerModelFactory = new XRControllerModelFactory();
 
 const raycaster = new THREE.Raycaster();
@@ -158,9 +159,6 @@ function init() {
     clock = new THREE.Clock();
     cannonDebug = new THREE.CannonDebugRenderer( scene, physicsWorld );
 
-    //initialize modules
-    const loader = new THREE.GLTFLoader();
-
     //pivot
     const geometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
     const material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
@@ -174,60 +172,20 @@ function init() {
     renderer.xr.addEventListener('sessionstart', sessionStarted);
     renderer.xr.addEventListener('sessionend', sessionEnded);
 
-    //loader
+    //level loader
     levelLoader.init(scene,renderer,physicsWorld).then(() => {
         levelLoader.load("test1",(data) => {
             console.log("finished loading");
+            progressDisplay.classList.add("hidden");
             renderer.render(scene, camera);
         },(xhr) => {
             let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
             progressDisplay.innerHTML = `Object ${xhr.objectLoaded}/${xhr.objectTotal} </br> ${progress} % - ${xhr.tag}`;
-            console.info(progress)
+            updateButtons();
         },(err) => {
             console.error(err)
         })
-    })
-    /*
-    textureLoader.load('./assets/elevator/env.png',function(tex){
-        //load scene
-        loader.load('./assets/elevator/model.glb', (gltf) => {
-            var model = gltf.scene;
-            scene.add(model);
-            console.log(gltf);
-            camera1 = gltf.cameras[0];
-    
-            iao = scene.getObjectByUserDataProperty("interactable",1);
-            elevators = scene.getObjectByUserDataProperty("elevator",1);
-            
-            mixer = new THREE.AnimationMixer(model);
-     
-            const clips = findClipsByName(gltf.animations,['close1','close2']);
-            for (const i in clips) {
-                let action = mixer.clipAction(clips[i]);
-                action.clampWhenFinished = true;
-                action.setLoop(THREE.LoopOnce);
-                action.play();
-            }
-    
-            setTimeout(function(){
-                startElevatorTravel(elevators[0]);
-            },5000);
-
-            var cubeRenderTarget = new THREE.WebGLCubeRenderTarget( 1024 ).fromEquirectangularTexture( renderer, tex );
-            scene.traverse((node) => {
-                if (node.isMesh) node.material.envMap = cubeRenderTarget.texture;
-            });
-
-            renderer.render(scene, camera1);
-
-    
-        }, function (xhr) {
-            let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
-            progressDisplay.innerHTML = progress+" %";
-        }, function (err) {
-            console.error(err)
-        });
-    });*/
+    });
 }
 
 document.addEventListener("visibilitychange", function() {
@@ -272,7 +230,6 @@ function sessionStarted(event){
     xrSession.addEventListener("selectstart",handleSelect);
     xrSession.addEventListener("selectend",handleSelectEnd);
 
-    //xrSession.requestAnimationFrame(firstFrameDraw);
     renderer.setAnimationLoop(drawFrame);
 }
 
@@ -290,6 +247,8 @@ function onDesktopStart(){
     document.addEventListener('keydown', handleKeyDownDesktop, false);
     document.addEventListener('keyup', handleKeyUpDesktop, false);
     document.addEventListener("click",  recaptureMouse, false);
+
+    clock.getDelta()
 
     renderer.setAnimationLoop(drawDesktopFrame);
 }
@@ -313,7 +272,7 @@ let rightPressState = false;
 let upPressState = false;
 let downPressState = false;
 function handleKeyDownDesktop(e){
-    switch(e.key){
+    switch(e.key.toLowerCase()){
         case "a":
             leftPressState = true;
         break;
@@ -326,7 +285,7 @@ function handleKeyDownDesktop(e){
         case "s":
             downPressState = true;
         break;
-        case "Control":
+        case "control":
             sprintPressState = true;
         break;
         case "c":
@@ -337,7 +296,7 @@ function handleKeyDownDesktop(e){
 }
 
 function handleKeyUpDesktop(e){
-    switch(e.key){
+    switch(e.key.toLowerCase()){
         case "a":
             leftPressState = false;
         break;
@@ -350,7 +309,7 @@ function handleKeyUpDesktop(e){
         case "s":
             downPressState = false;
         break;
-        case "Control":
+        case "control":
             sprintPressState = false;
         break;
         case "c":

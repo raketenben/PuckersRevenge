@@ -6,6 +6,10 @@ html, body, canvas {
     background: black;
 }
 
+p {
+    text-align: center;
+}
+
 .enter {
     position: absolute;
     left: 25%;
