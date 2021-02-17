@@ -179,8 +179,10 @@ function init() {
         levelLoader.load("test1",(data) => {
             console.log("finished loading");
             renderer.render(scene, camera);
-        },(prog) => {
-            console.info(prog)
+        },(xhr) => {
+            let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
+            progressDisplay.innerHTML = `Object ${xhr.objectLoaded}/${xhr.objectTotal} </br> ${progress} % - ${xhr.tag}`;
+            console.info(progress)
         },(err) => {
             console.error(err)
         })

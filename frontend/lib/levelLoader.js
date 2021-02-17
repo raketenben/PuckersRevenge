@@ -61,15 +61,27 @@ class levelLoader {
 
     load(levelname,res,prog,rej){
         this.loadLevelFile(levelname,(levelFile) => {
-            let total = 0;
+            let total = levelFile.objects.length;
             let loaded = 0;
-            for (const object of levelFile.objects) {
-                total++;
-                this.addObjectToScene(object,() => {
-                    loaded++;
-                    if(loaded == total) return res();
-                },prog,rej)
+            function sendProgressUpdate(xhr){
+                xhr.objectTotal = total;
+                xhr.objectLoaded = loaded;
+                prog(xhr)
             }
+
+            let nextLoad = () => {
+                this.addObjectToScene(levelFile.objects[loaded],() => {
+                    loaded++;
+                    if(loaded == total) {
+                        sendProgressUpdate({total:1,loaded:1,tag:"finished"})
+                        return res();
+                    }else
+                        nextLoad()
+                },(xhr) => {
+                    sendProgressUpdate(xhr)
+                },rej);
+            }
+            nextLoad();
         },rej);
     }
 
