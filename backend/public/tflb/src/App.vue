@@ -1,6 +1,6 @@
 <template>
   <div id="app">
-    <h1>Tool for lazy Ben's</h1>
+    <h1>Editor</h1>
     <label for="path">Select Path </label>
 
     <select id="Path" v-model="path">
@@ -33,28 +33,71 @@ export default {
 
 <style>
 * {
+  box-sizing:border-box;
   padding: 0;
   margin: 0;
 }
+
+html,body {
+  width:100%;
+  height:100%;
+}
+
 body {
-  background: repeating-linear-gradient(
-    45deg,
-    #252525 25%,
-    #252525 70%,
-    #2c6e2c 30%,
-    #2c6e2c 75%
-  );
-  background-size: 100px 100px;
+  font-family: Arial, Helvetica, sans-serif;
+  background: rgb(44,110,44);
+  background: radial-gradient(circle, rgba(44,110,44,1) 0%, rgba(27,27,27,1) 100%);
+  font-size: 1.05em;
 }
+
 #app {
-  color: azure;
-  background: #363636;
-  margin: 1em auto;
-  width: 90%;
-  padding: .5em;
-  height: 90vh;
+  color: white;
+  background: #242424;
+  border-radius: 25px;
+  margin: auto;
+  width: 70%;
+  padding: 20px;
+  min-height: 100vh;
 }
+
+p {
+  margin: 5px;;
+}
+
 h1, hr {
-  margin: .5em 0;
+  margin: 10px;
+}
+
+input {
+  margin: 2px;
+  padding: 4px 8px;
+  border: solid 2px rgb(24 118 0);
+  border-radius: 50px;
+}
+
+label {
+  margin: 5px;
+}
+
+button {
+  margin: 2px;
+  padding: 4px 8px;
+  border: solid 2px rgb(24 118 0);
+  border-radius: 50px;
+  font-size: 1.1em;
+}
+
+button {
+  padding: 5px 10px;
+  border: solid 2px rgb(2, 70, 0);
+  background: rgb(88, 146, 0);
+  color: white;
+}
+
+select {
+  margin: 2px;
+  padding: 4px 8px;
+  border: solid 2px rgb(24 118 0);
+  border-radius: 50px;
 }
 </style>
