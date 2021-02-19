@@ -33,9 +33,9 @@ class hitboxGenerator {
     shapeFromJSON(obj,json){
         if(typeof json === 'string' || json instanceof String) json = JSON.parse(json);
         for (const shapeData of json) {
-            let size = new CANNON.Vec3(shapeData.size.x,shapeData.size.y,shapeData.size.z);
             switch(shapeData.type){
                 case 'box':
+                    let size = new CANNON.Vec3(shapeData.size.x,shapeData.size.y,shapeData.size.z);
                     this.shape = new CANNON.Box(size);
                     break;
                 case 'sphere':
