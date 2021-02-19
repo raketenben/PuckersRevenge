@@ -3,7 +3,7 @@
     <input type="text" placeholder="type">
     <br>
     <input type="number" placeholder="mass">
-    <p>Shapes <button v-on:click="addShape">Add</button></p> 
+    <p>Shapes <button @click="addShape">Add</button></p> 
     <Shape v-for="(shape, index) in hitBox.shapes" v-bind:key="index" :shape="shape"/>
   </div>
 </template>
@@ -30,7 +30,7 @@ export default {
         hitBox: {}
     },
     created: function () {
-        console.log(this)
+        !(this.$props.hitBox.shapes.length > 0) &&
         this.addShape()
     }
 }
