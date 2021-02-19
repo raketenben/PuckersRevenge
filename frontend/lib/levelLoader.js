@@ -37,7 +37,6 @@ class levelLoader {
                     fetch(asset.hitbox)
                     .then(response => response.json())
                     .then(hitbox => {
-                        console.log(gltf)
                         //apply env map
                         var cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024).fromEquirectangularTexture( this.renderer, texture );
                         gltf.scene.traverse((node) => {
