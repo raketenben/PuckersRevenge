@@ -32,6 +32,7 @@ export default {
 </script>
 
 <style>
+/** Mittelmäßiges CSS von diesem Bäääahän*/
 * {
   box-sizing:border-box;
   padding: 0;
