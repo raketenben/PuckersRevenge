@@ -128,29 +128,15 @@ function init() {
     physicsWorld.addContactMaterial(defaultContactMaterial);
     //physicsWorld.solver.iterations = 20;
     //physicsWorld.solver.tolerance = 0;
-/*
-    //ground
-    let ground = new CANNON.Body({ mass: 0 , material: defaultMaterial });
-    hitboxGenerator.createFromJSON(ground,Hitboxes.ground);
-    ground.type = CANNON.Body.STATIC;
-    physicsWorld.addBody(ground);
-
-    //elevator
-    testChamber = new CANNON.Body({ mass: 0 , material: defaultMaterial });
-    hitboxGenerator.createFromJSON(testChamber,Hitboxes.elevator);
-    testChamber.type = CANNON.Body.KINEMATIC;
-    physicsWorld.addBody(testChamber);*/
 
     //add hitbox
     let shape1 = new CANNON.Sphere(0.15);
-    //let shape1 = new CANNON.Box(new CANNON.Vec3(0.1,0.9,0.1));
     playerBox = new CANNON.Body({ mass: 65 , material: playerMaterial});
     playerBox.angularDamping = 1;
     playerBox.type = CANNON.Body.DYNAMIC;
     playerBox.position.y = 0.02;
     playerBox.position.x = 0;
 
-    //playerBox.addShape(shape1,new CANNON.Vec3(0,0.9,0));
     playerBox.addShape(shape1,new CANNON.Vec3(0,0.15,0));
     physicsWorld.addBody(playerBox);
 
@@ -402,25 +388,29 @@ function drawFrame(frameTime,frame){
 }
 
 function drawDesktopFrame(frameTime,frame){
-    stats.begin();
 
     delta = clock.getDelta();
     pose = {transform:{position:{x:0,y:playerHeightDesktop,z:0}}};
 
-    //animations
-	//mixer.update(delta);
+    if(pointerLockState == true){
+        stats.begin();
+        //animations
+        //mixer.update(delta);
 
-    handleElevators(frame,delta,pose);
+        handleElevators(frame,delta,pose);
+        
+        handleInputsDesktop(frame,delta);
+        handleInteractionsDesktop(frame,delta);
 
-    if(pointerLockState == true) handleInputsDesktop(frame,delta);
-    handleInteractionsDesktop(frame,delta);
+        updateAndMatchPhysics(delta,pose);
 
-    updateAndMatchPhysics(delta,pose);
+        //cannonDebug.update();
 
-    //cannonDebug.update();
+        renderer.render(scene, camera);
 
-    renderer.render(scene, camera);
-    stats.end();
+        stats.end();
+    } 
+
 }
 
 function handleElevators(frame,delta,pose){
@@ -473,7 +463,6 @@ function handleInteractions(frame,delta,pose){
                 }
 
                 for (const interactableObject of iao) {
-                    
                     let distance = interactableObject.position.distanceTo(targetRaySpace.currentPosition);
                     
                     if(distance < 0.2 && !interactableObject.keepInteract) {
