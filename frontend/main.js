@@ -1,20 +1,23 @@
 import { XRControllerModelFactory } from './node_modules/three/examples/jsm/webxr/XRControllerModelFactory.js';
-import HitboxGenerator from './lib/hitboxGenerator.js';
-import Hitboxes from "./hitboxes.js"
+import LevelLoader from './lib/levelLoader.js';
 
 const enterVrButton = document.getElementById("enterVR");
 const enterDesktopButton = document.getElementById("enterDesktop");
 const progressDisplay = document.getElementById("progress");
 
-if(navigator.xr){
-    navigator.xr.isSessionSupported( 'immersive-vr' ).then( function ( supported ) {
-        if(!supported){
-            enterVrButton.innerHTML = "VR not supported";
-            enterVrButton.classList.add("disabled");
-        }
-    });
-}else{
-    enterVrButton.innerHTML = "VR not supported";
+function updateButtons(){
+    if(navigator.xr){
+        navigator.xr.isSessionSupported( 'immersive-vr' ).then( function ( supported ) {
+            if(supported){
+                enterVrButton.classList.remove("hidden");
+            }else{
+                enterVrButton.innerHTML = "VR not supported";
+                enterDesktopButton.classList.remove("hidden");
+            }
+        });
+    }else{
+        enterVrButton.innerHTML = "VR not supported";
+    }
 }
 
 //xr session events   
@@ -36,7 +39,7 @@ enterDesktopButton.addEventListener("click",onDesktopStart);
 const defaultMaterial = new CANNON.Material({ name: "default" });
 const playerMaterial = new CANNON.Material({ name: "player" });
 const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial,playerMaterial,{
-    friction: 0.001,
+    friction: 0.01,
     restitution: 0.0,
 });
 
@@ -46,6 +49,8 @@ const playerMouseSenseDesktop = (Math.PI/180)*0.25;
 
 //player settings
 const playerSpeed = 1.5;
+const playerSprintFactor = 1;
+const playerZoomFactorDektop = 4;
 const playerRotationTimeout = 350;
 const playerRotationAngle = (Math.PI/180) * 30;
 
@@ -62,7 +67,7 @@ const elevatorParticleHeight = 500;
 const elevatorParticlesCount = 4000;
 const elevatorParticleMaterial = new THREE.PointsMaterial({ color: 0x333333,size: 0.005});
 
-const hitboxGenerator = new HitboxGenerator();
+const levelLoader = new LevelLoader();
 const controllerModelFactory = new XRControllerModelFactory();
 
 const raycaster = new THREE.Raycaster();
@@ -72,9 +77,11 @@ let playerHeight = new THREE.Vector3(0,0,0);
 let stats, clock;
 let camera, camera1, scene, renderer;
 let xrSession, xrReferenceSpace;
-let user, pivot;
+let user;
 let physicsWorld, playerBox, testChamber;
 let holding = {left:null,right:null};
+
+let textureLoader;
 
 let cannonDebug;
 
@@ -94,7 +101,7 @@ function init() {
     scene.background = new THREE.Color("#000000");
 
     //add additional light to scene
-    const hemiLight = new THREE.HemisphereLight(0xFFF9CC, 0x000000, 5);
+    const hemiLight = new THREE.HemisphereLight(0xFFF9CC, 0x000000, 4);
     scene.add(hemiLight);
 
     //add user to scene
@@ -111,14 +118,17 @@ function init() {
     renderer.physicallyCorrectLights = true;
     renderer.outputEncoding = THREE.sRGBEncoding;
 
+    textureLoader = new THREE.TextureLoader();
+
     //physics
     physicsWorld = new CANNON.World();
     physicsWorld.gravity.set(0,-9.82,0);
     physicsWorld.broadphase = new CANNON.NaiveBroadphase();
+    physicsWorld.defaultContactMaterial = defaultContactMaterial;
     physicsWorld.addContactMaterial(defaultContactMaterial);
     //physicsWorld.solver.iterations = 20;
     //physicsWorld.solver.tolerance = 0;
-
+/*
     //ground
     let ground = new CANNON.Body({ mass: 0 , material: defaultMaterial });
     hitboxGenerator.createFromJSON(ground,Hitboxes.ground);
@@ -129,7 +139,7 @@ function init() {
     testChamber = new CANNON.Body({ mass: 0 , material: defaultMaterial });
     hitboxGenerator.createFromJSON(testChamber,Hitboxes.elevator);
     testChamber.type = CANNON.Body.KINEMATIC;
-    physicsWorld.addBody(testChamber);
+    physicsWorld.addBody(testChamber);*/
 
     //add hitbox
     let shape1 = new CANNON.Sphere(0.15);
@@ -149,15 +159,9 @@ function init() {
     clock = new THREE.Clock();
     cannonDebug = new THREE.CannonDebugRenderer( scene, physicsWorld );
 
-    //initialize modules
-    const loader = new THREE.GLTFLoader();
-
     //pivot
     const geometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
     const material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
-    pivot = new THREE.Mesh( geometry, material );
-    scene.add(pivot);
-
 
     //show canvas
     document.body.appendChild(renderer.domElement);
@@ -166,44 +170,29 @@ function init() {
     document.body.appendChild(stats.domElement);
 
     renderer.xr.addEventListener('sessionstart', sessionStarted);
+    renderer.xr.addEventListener('sessionend', sessionEnded);
 
-    renderer.xr.addEventListener('sessionend', function (event) {
-        xrSession = null;
-        enterVrButton.innerHTML = "Enter VR";
-        renderer.setAnimationLoop(null);
-    });
-
-    //load scene
-    loader.load('./public/elevator-chamber.glb', (gltf) => {
-        var model = gltf.scene;
-        scene.add(model);
-        console.log(gltf);
-        camera1 = gltf.cameras[0];
-        renderer.render(scene, camera1);
-
-        iao = scene.getObjectByUserDataProperty("interactable",1);
-        elevators = scene.getObjectByUserDataProperty("elevator",1);
-        
-        mixer = new THREE.AnimationMixer( model);
- 
-        const clips = findClipsByName(gltf.animations,['open2','open3']);
-        for (const i in clips) {
-            let action = mixer.clipAction(clips[i]);
-            action.clampWhenFinished = true;
-            action.setLoop(THREE.LoopOnce);
-            action.play();
-        }
-
-        setTimeout(function(){
-            startElevatorTravel(elevators[0]);
-        },5000);
-
-    }, function (xhr) {
-        let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
-        progressDisplay.innerHTML = progress+" %";
-    }, function () {
+    //level loader
+    levelLoader.init(scene,renderer,physicsWorld).then(() => {
+        levelLoader.load("test1",(data) => {
+            console.log("finished loading");
+            progressDisplay.classList.add("hidden");
+            renderer.render(scene, camera);
+        },(xhr) => {
+            let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
+            progressDisplay.innerHTML = `Object ${xhr.objectLoaded}/${xhr.objectTotal} </br> ${progress} % - ${xhr.tag}`;
+            updateButtons();
+        },(err) => {
+            console.error(err)
+        })
     });
 }
+
+document.addEventListener("visibilitychange", function() {
+    if (document.visibilityState === 'visible') {
+        clock.getDelta();
+    }
+});
 
 window.addEventListener( 'resize', onWindowResize, false );
 function onWindowResize(){
@@ -211,6 +200,12 @@ function onWindowResize(){
     camera.updateProjectionMatrix();
 
     renderer.setSize( window.innerWidth, window.innerHeight );
+}
+
+function sessionEnded(){
+    xrSession = null;
+    enterVrButton.innerHTML = "Enter VR";
+    renderer.setAnimationLoop(null);
 }
 
 function sessionStarted(event){
@@ -235,7 +230,6 @@ function sessionStarted(event){
     xrSession.addEventListener("selectstart",handleSelect);
     xrSession.addEventListener("selectend",handleSelectEnd);
 
-    //xrSession.requestAnimationFrame(firstFrameDraw);
     renderer.setAnimationLoop(drawFrame);
 }
 
@@ -254,6 +248,8 @@ function onDesktopStart(){
     document.addEventListener('keyup', handleKeyUpDesktop, false);
     document.addEventListener("click",  recaptureMouse, false);
 
+    clock.getDelta()
+
     renderer.setAnimationLoop(drawDesktopFrame);
 }
 
@@ -270,43 +266,57 @@ function recaptureMouse(){
     renderer.domElement.requestPointerLock();
 }
 
+let sprintPressState = false;
 let leftPressState = false;
 let rightPressState = false;
 let upPressState = false;
 let downPressState = false;
 function handleKeyDownDesktop(e){
-    switch(e.keyCode){
-        case 65:
-        leftPressState = true;
+    switch(e.key.toLowerCase()){
+        case "a":
+            leftPressState = true;
         break;
-        case 68:
-        rightPressState = true;
+        case "d":
+            rightPressState = true;
         break;
-        case 87:
-        upPressState = true;
+        case "w":
+            upPressState = true;
         break;
-        case 83:
-        downPressState = true;
+        case "s":
+            downPressState = true;
+        break;
+        case "control":
+            sprintPressState = true;
+        break;
+        case "c":
+            camera.zoom = playerZoomFactorDektop;
+            camera.updateProjectionMatrix();
         break;
     }
 }
 
 function handleKeyUpDesktop(e){
-    switch(e.keyCode){
-        case 65:
-        leftPressState = false;
+    switch(e.key.toLowerCase()){
+        case "a":
+            leftPressState = false;
         break;
-        case 68:
-        rightPressState = false;
+        case "d":
+            rightPressState = false;
         break;
-        case 87:
-        upPressState = false;
+        case "w":
+            upPressState = false;
         break;
-        case 83:
-        downPressState = false;
+        case "s":
+            downPressState = false;
+        break;
+        case "control":
+            sprintPressState = false;
+        break;
+        case "c":
+            camera.zoom = 1;
+            camera.updateProjectionMatrix();
         break;
     }
-    
 }
 
 function handleInteractionsDesktop(v){
@@ -340,6 +350,7 @@ function handleInputsDesktop(){
 
     //apply playerSpeed
     offsetPos.multiplyScalar(playerSpeed);
+    if(sprintPressState) offsetPos.multiplyScalar(playerSprintFactor);
     
     //apply head rotation and camera parent rotation
     offsetPos.applyQuaternion(camera.quaternion);
@@ -359,16 +370,6 @@ function findClipsByName(animations,names) {
     return ret;
 }
 
-function firstFrameDraw(frameTime,frame){
-    xrSession.requestAnimationFrame(drawFrame);
-    const pose = frame.getViewerPose(xrReferenceSpace);
-    if(firstFrame){
-        //init delta
-        deltaPosition.copy(pose.transform.position);
-        firstFrame = false;
-    }
-}
-
 let firstFrame = true;
 let delta = 0;
 let pose = null;
@@ -385,7 +386,7 @@ function drawFrame(frameTime,frame){
     pose = frame.getViewerPose(xrReferenceSpace);
 
     //animations
-	mixer.update( delta);
+	//mixer.update( delta);
 
     handleElevators(frame,delta,pose);
     
@@ -407,7 +408,7 @@ function drawDesktopFrame(frameTime,frame){
     pose = {transform:{position:{x:0,y:playerHeightDesktop,z:0}}};
 
     //animations
-	mixer.update(delta);
+	//mixer.update(delta);
 
     handleElevators(frame,delta,pose);
 
