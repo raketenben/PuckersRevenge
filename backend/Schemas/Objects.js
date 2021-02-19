@@ -1,13 +1,13 @@
 const mongoose = require('mongoose')
 
 const ObjectSchema = new mongoose.Schema({
-    modle: Buffer,
-    stats: Boolean,
-    physics: String,
+    environment: Buffer,
+    model: Buffer,
     hitBoxes: [{
-        stateName: String,
-        bitBoxes: [{
-            shape: Number,
+        type: String,
+        mass:mongoose.Decimal128,
+        shapes:[{
+            shape: String,
             size: {
                 x: mongoose.Decimal128,
                 y: mongoose.Decimal128,

@@ -4,7 +4,7 @@ const LevelSchema = new mongoose.Schema({
     name: String,
     objects: [
         {
-            modle: mongoose.ObjectId,
+            name: String,
             position: {
                 x: mongoose.Decimal128,
                 y: mongoose.Decimal128,
