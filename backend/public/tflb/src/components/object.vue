@@ -1,24 +1,23 @@
 <template>
 <div>
   <h1>Object Stuff</h1>
-  <Transform :position="t"/>
-  <Transform :position="t2" rotation="true" />
-  <p> {{ t }}</p>
-  <p> {{ t2 }}</p>
+    <HitBox :hitBox="t"/>
   </div>
 </template>
 
 <script>
-import Transform from './transform'
+import HitBox from './hitBox'
+
 export default {
     name: 'Object',
     components: {
-        Transform
+        HitBox
     },
     data() {
         return {
-            t: {},
-            t2: {}
+            t: {
+                shapes: []
+            }
         }
     }
 }

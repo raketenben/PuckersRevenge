@@ -1,9 +1,9 @@
 <template>
   <div>
-      <input type="number" name="x" v-model="position.x" placeholder="x">
-      <input type="number" name="y" v-model="position.y" placeholder="y">
-      <input type="number" name="z" v-model="position.z" placeholder="z">
-      <input v-if="rotation" type="number" name="w" v-model="position.w" placeholder="w">
+      <input type="number" name="x" v-model="values.x" placeholder="x">
+      <input type="number" name="y" v-model="values.y" placeholder="y">
+      <input type="number" name="z" v-model="values.z" placeholder="z">
+      <input v-if="rotation" type="number" name="w" v-model="values.w" placeholder="w">
   </div>
 </template>
 
@@ -15,7 +15,7 @@ export default {
             type: Boolean,
             default: false
         },
-        position: {
+        values: {
             x: Number,
             y: Number,
             z: Number,
