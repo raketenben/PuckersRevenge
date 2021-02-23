@@ -7,9 +7,14 @@
       <option value="object">Object</option>
       <option value="level">Level</option>
     </select>
-<hr>
-    <Object v-if="path == 'object'"/>
-    <Level v-if="path == 'level'"/>
+    <hr>
+
+    <div ref="formulars">
+      <Object v-if="path == 'object'"/>
+      <Level v-if="path == 'level'"/>
+    </div>
+
+    <input type="submit" @submit="submit" />
   </div>
 </template>
 
@@ -22,6 +27,12 @@ export default {
   components: {
     Level,
     Object
+  },
+  methods: {
+    submit: function() {
+      console.log('t')
+      console.log(this.$ref)
+    }
   },
   data() {
     return {

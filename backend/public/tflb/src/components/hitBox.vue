@@ -4,7 +4,7 @@
     <br>
     <input type="number" placeholder="mass">
     <p>Shapes <button @click="addShape">Add</button></p> 
-    <Shape v-for="(shape, index) in hitBox.shapes" v-bind:key="index" :shape="shape"/>
+    <Shape v-for="(shape, index) in hitBox.shapes" :ref="'hitbox-'+index" v-bind:key="index" :shape="shape"/>
   </div>
 </template>
 
