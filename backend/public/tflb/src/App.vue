@@ -7,10 +7,20 @@
       <option value="object">Object</option>
       <option value="level">Level</option>
     </select>
+    <fieldset>
+      <input type="radio" v-model="list" id="list-no" :value="false">
+      <label for="list-no">Create</label>
+      <input type="radio" v-model="list" id="list-yes" :value="true">
+      <label for="list-yes">Manage existing</label>
+    </fieldset>
     <hr>
-
-    <Object v-if="path == 'object'" ref="formulars"/>
-    <Level v-if="path == 'level'" ref="formulars"/>
+    <div v-if="list">
+      <List path="t" />
+    </div>
+    <div v-else>
+        <Object v-if="path == 'object'" ref="formulars"/>
+        <Level v-if="path == 'level'" ref="formulars"/>
+    </div>
 
     <input type="submit" @click="submit" />
     <div v-text="msg"></div>
@@ -21,12 +31,14 @@
 <script>
 import Level from './components/level.vue'
 import Object from  './components/object.vue'
+import List from './components/List.vue'
 
 export default {
   name: 'App',
   components: {
     Level,
-    Object
+    Object,
+    List
   },
   methods: {
     submit: async function() {
@@ -44,11 +56,20 @@ export default {
       const data = await response.json()
       this.error = data?.error
       this.msg = data?.msg
+    },
+    editElement: function(name) {
+      // TODO : fetch + backend
+      console.log(name);
+    },
+    deleteElement: function() {
+      // TODO : fetch + backend
+      console.log(name);
     }
   },
   data() {
     return {
       path: 'object',
+      list: false,
       error: '',
       msg: ''
     }
