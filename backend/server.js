@@ -13,10 +13,10 @@ app.get('/toolbox', async (req, res) => {
 })
 
 const ObjectRoute = require('./routes/object')
-app.use('api/objects', ObjectRoute)
+app.use('/api/objects/', ObjectRoute)
 
 const LevelRoute = require('./routes/object')
-app.use('api/level', LevelRoute)
+app.use('/api/level/', LevelRoute)
 
 app.get('/', (req, res) => {
   res.send('This is a api you should not visit this page. <br><b>Go away!!!<b>')

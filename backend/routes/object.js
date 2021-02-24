@@ -10,7 +10,7 @@ db.once('open', function() {
   console.log("wowyay");
 });
 
-const Object = mongoose.model('Object', require('./Schemas/Objects'));
+const Object = mongoose.model('Object', require('../Schemas/Objects'));
 
 router.get('/', async (req, res) => {
     Object.find(function (err, obj) {

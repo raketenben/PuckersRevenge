@@ -10,7 +10,7 @@ db.once('open', function() {
   console.log("wowyay");
 });
 
-const Level = mongoose.model('Level', require('./Schemas/Level'));
+const Level = mongoose.model('Level', require('../Schemas/Level'));
 
 router.get('/', async (req, res) => {
     Level.find(function (err, level) {
