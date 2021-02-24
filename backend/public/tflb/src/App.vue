@@ -9,12 +9,12 @@
     </select>
     <hr>
 
-    <div ref="formulars">
-      <Object v-if="path == 'object'"/>
-      <Level v-if="path == 'level'"/>
-    </div>
+    <Object v-if="path == 'object'" ref="formulars"/>
+    <Level v-if="path == 'level'" ref="formulars"/>
 
-    <input type="submit" @submit="submit" />
+    <input type="submit" @click="submit" />
+    <div v-text="msg"></div>
+    <div v-text="error" class="errorBox"></div>
   </div>
 </template>
 
@@ -29,14 +29,28 @@ export default {
     Object
   },
   methods: {
-    submit: function() {
-      console.log('t')
-      console.log(this.$ref)
+    submit: async function() {
+      //console.log(JSON.parse(JSON.stringify(this.$refs["formulars"].object)))
+      const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/objects`, {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          payload: JSON.parse(JSON.stringify(this.$refs["formulars"].object))
+        })
+      })
+      const data = await response.json()
+      this.error = data?.error
+      this.msg = data?.msg
     }
   },
   data() {
     return {
-      path: 'object'
+      path: 'object',
+      error: '',
+      msg: ''
     }
   }
 }
@@ -111,5 +125,8 @@ select {
   padding: 4px 8px;
   border: solid 2px rgb(24 118 0);
   border-radius: 50px;
+}
+.errorBox {
+  color: red
 }
 </style>

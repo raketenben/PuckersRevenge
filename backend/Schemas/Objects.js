@@ -1,6 +1,7 @@
 const mongoose = require('mongoose')
 
 const ObjectSchema = new mongoose.Schema({
+    name: String,
     environment: Buffer,
     model: Buffer,
     hitBoxes: [{

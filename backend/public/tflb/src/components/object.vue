@@ -1,13 +1,18 @@
 <template>
 <div>
   <h1>Object Stuff</h1>
+    <p>Name</p> 
+    <input type="text" v-model="object.name">
     <p>Enviroment</p> 
     <input type="file" @change="setEnviroment">
     <p>Model</p>
     <input type="file" @change="setModel">
     
     <p>HitBoxes <button @click="addHitBox">Add</button></p>
-    <HitBox v-for="(hitBox, index) in object.hitboxes" :hitBox="hitBox" v-bind:key="index"/>
+    <div v-for="(hitBox, index) in object.hitboxes" v-bind:key="index">
+        <HitBox :hitBox="hitBox" />
+        <button @click="deleteElement(index)">Delete</button>
+    </div>
   </div>
 </template>
 
@@ -20,9 +25,14 @@ export default {
         HitBox
     },
     methods: {
+        deleteElement: function(key) {
+            this.object.hitboxes.splice(key,1)
+        },
         addHitBox: function () {
             this.object.hitboxes.push({
-                    shapes: []
+                type: "",
+                mass: 0,
+                shapes: []
             })
         },
         setEnviroment: function (event) {
@@ -44,14 +54,16 @@ export default {
             reader.readAsBinaryString(file)
         }
     },
+    created() {
+        this.addHitBox()
+    },
     data() {
         return {
             object: {
+                name: "",
                 environment: null,
                 model: null,
-                hitboxes: [{
-                    shapes: []
-            }]
+                hitboxes: []
             }
         }
     }

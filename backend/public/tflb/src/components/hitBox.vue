@@ -1,10 +1,13 @@
 <template>
   <div>
-    <input type="text" placeholder="type">
+    <input type="text" v-model="hitBox.type" placeholder="type">
     <br>
-    <input type="number" placeholder="mass">
+    <input type="number" v-model="hitBox.mass" placeholder="mass">
     <p>Shapes <button @click="addShape">Add</button></p> 
-    <Shape v-for="(shape, index) in hitBox.shapes" :ref="'hitbox-'+index" v-bind:key="index" :shape="shape"/>
+    <div v-for="(shape, index) in hitBox.shapes" v-bind:key="index">
+        <Shape :shape="shape"/>
+        <button @click="deleteElement(index)">Delete</button>
+    </div>
   </div>
 </template>
 
@@ -17,6 +20,9 @@ export default {
         Shape
     },
     methods: {
+        deleteElement: function(key) {
+            this.$props.hitBox.shapes.splice(key,1)
+        },
         addShape: function () {
             this.$props.hitBox.shapes.push({
                     shape: 'static',
