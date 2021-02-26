@@ -17,12 +17,15 @@
 </template>
 
 <script>
-import HitBox from './hitBox'
+import HitBox from './HitBox'
 
 export default {
     name: 'Object',
     components: {
         HitBox
+    },
+    props: {
+        editElemet: {}
     },
     methods: {
         deleteElement: function(key) {
@@ -55,7 +58,10 @@ export default {
         }
     },
     created() {
-        this.addHitBox()
+        if(this.editElemet)
+            this.object = this.editElemet
+        else
+            this.addHitBox()
     },
     data() {
         return {
