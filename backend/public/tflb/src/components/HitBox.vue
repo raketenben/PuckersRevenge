@@ -12,7 +12,7 @@
 </template>
 
 <script>
-import Shape from './shape'
+import Shape from './Shape'
 
 export default {
     name: 'HitBox',

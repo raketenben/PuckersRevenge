@@ -10,18 +10,44 @@ db.once('open', function() {
   console.log("wowyay");
 });
 
-const Object = mongoose.model('Object', require('../Schemas/Objects'));
+const Object = mongoose.model('Object', require('../Schemas/Object'));
 
 router.get('/', async (req, res) => {
-    Object.find(function (err, obj) {
+    Object.find({}, 'name', function (err, obj) {
       if(err) return console.error(err)
         res.json(obj)
     })
   })
-
-router.post('/', async (req, res) => {
-    const obj = new Object(req.body.payload);
-    obj.save().then(() => res.json({msg: "Ok"})).catch((e) => res.json({error: e}))  
+  router.get('/:name', async (req, res) => {
+    Object.find({name: req.params.name},function (err, obj) {
+      if(err) return console.error(err)
+        res.json(obj[0])
+    })
+  })
+  router.delete('/:name', async (req, res) => {
+    Object.deleteOne({name: req.params.name},function (err) {
+      if(err) {
+        console.error(err)
+        res.json({error:'error'})
+      } else res.json({mgs:'Ok'})
+    })
   })
 
+router.post('/', async (req, res) => {
+  let unique = false;
+  console.log(req.body.payload)
+
+  await Object.find({name: req.body.payload.name},function (err, obj) {
+    if(err) return console.error(err)
+    unique = !obj.length
+  })
+  if(!unique) return res.json({error: 'Object with name alredy exist'})
+
+  const obj = new Object(req.body.payload);
+  obj.save().then(() => res.json({msg: "Ok"})).catch((e) => res.json({error: e}))   
+})
+
 module.exports = router
+
+
+      

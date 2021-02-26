@@ -16,7 +16,7 @@
 </template>
 
 <script>
-import Transform from './transform'
+import Transform from './Transform'
 export default {
     name: 'Shape',
     components: {

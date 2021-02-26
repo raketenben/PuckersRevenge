@@ -7,6 +7,7 @@
       <option value="object">Object</option>
       <option value="level">Level</option>
     </select>
+
     <fieldset>
       <input type="radio" v-model="list" id="list-no" :value="false">
       <label for="list-no">Create</label>
@@ -14,23 +15,25 @@
       <label for="list-yes">Manage existing</label>
     </fieldset>
     <hr>
+
     <div v-if="list">
-      <List path="t" />
-    </div>
-    <div v-else>
-        <Object v-if="path == 'object'" ref="formulars"/>
-        <Level v-if="path == 'level'" ref="formulars"/>
+      <List :path="path" />
     </div>
 
-    <input type="submit" @click="submit" />
+    <div v-else>
+      <Object v-if="path == 'object'" ref="formulars" :editElemet="editElemet"/>
+      <Level v-if="path == 'level'" ref="formulars" :editElemet="editElemet"/>
+      <input type="submit" @click="submit" value="Create"/>
+    </div>
+
     <div v-text="msg"></div>
     <div v-text="error" class="errorBox"></div>
   </div>
 </template>
 
 <script>
-import Level from './components/level.vue'
-import Object from  './components/object.vue'
+import Level from './components/Level.vue'
+import Object from  './components/Object.vue'
 import List from './components/List.vue'
 
 export default {
@@ -41,35 +44,42 @@ export default {
     List
   },
   methods: {
+    setElement: function(element) {
+      this.editElemet = element
+      this.list = false
+    },
     submit: async function() {
-      //console.log(JSON.parse(JSON.stringify(this.$refs["formulars"].object)))
-      const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/objects`, {
+      console.log(JSON.parse(JSON.stringify(this.$refs["formulars"][this.path])))
+      let data = {}
+      try {
+      const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/${this.path}/`, {
         method: 'POST',
-        mode: 'cors',
         headers: {
+          'Access-Control-Allow-Headers': '*',
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Credentials': 'true',
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          payload: JSON.parse(JSON.stringify(this.$refs["formulars"].object))
+          payload: JSON.parse(JSON.stringify(this.$refs["formulars"][this.path]))
         })
       })
-      const data = await response.json()
-      this.error = data?.error
-      this.msg = data?.msg
-    },
-    editElement: function(name) {
-      // TODO : fetch + backend
-      console.log(name);
-    },
-    deleteElement: function() {
-      // TODO : fetch + backend
-      console.log(name);
+      data = await response.json()
+      }
+      catch(e){
+        this.msg = 'Fetch error'
+      }finally {
+        this.error = data?.error
+        this.msg = data?.msg
+      }
     }
   },
   data() {
     return {
       path: 'object',
       list: false,
+      editElemet: null,
+      editMode: false,
       error: '',
       msg: ''
     }

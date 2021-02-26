@@ -14,10 +14,10 @@ export default {
     },
     methods: {
         editElement: function() {
-            this.$parent.$parent.editElement(this.name)
+            this.$parent.editElement(this.name)
         },
         deleteElement: function() {
-            this.$parent.$parent.deleteElement(this.name)
+            this.$parent.deleteElement(this.name)
         }
     }
 }
