@@ -81,8 +81,6 @@ let user;
 let physicsWorld, playerBox, testChamber;
 let holding = {left:null,right:null};
 
-let textureLoader;
-
 let cannonDebug;
 
 let mixer;
@@ -111,14 +109,13 @@ function init() {
     scene.add(user);
 
     //setup renderer
-    renderer = new THREE.WebGLRenderer({ antialias: false});
+    //
+    renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", precision:"highp"});
     renderer.xr.enabled = true;
     renderer.xr.setReferenceSpaceType( 'local-floor' );
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.physicallyCorrectLights = true;
     renderer.outputEncoding = THREE.sRGBEncoding;
-
-    textureLoader = new THREE.TextureLoader();
 
     //physics
     physicsWorld = new CANNON.World();
@@ -317,6 +314,11 @@ function handleInteractionsDesktop(v){
 let playerDesktopView = [0,0];
 function handleMousemovementDesktop(e){
     if(pointerLockState == true) {
+        if(e.movementX > 16) return;
+        if(e.movementX < -16) return;
+        if(e.movementY > 16) return;
+        if(e.movementY < -16) return;
+
         playerDesktopView[0] -= e.movementX * playerMouseSenseDesktop;
         if(
             playerDesktopView[1] - e.movementY * playerMouseSenseDesktop < Math.PI/2 && 
@@ -333,6 +335,9 @@ function handleMousemovementDesktop(e){
 function handleInputsDesktop(){
     //get gamepad input
     offsetPos.set((leftPressState ? -1 : (rightPressState ? 1 : 0)),0,(upPressState ? -1 : (downPressState ? 1 : 0)));
+
+    //slow down if multiple directions
+    offsetPos.multiplyScalar(1.2*((Math.abs(Math.abs(offsetPos.x)-Math.abs(offsetPos.z))/2)+0.5));
 
     //apply playerSpeed
     offsetPos.multiplyScalar(playerSpeed);
