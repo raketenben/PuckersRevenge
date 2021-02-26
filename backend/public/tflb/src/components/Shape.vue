@@ -2,9 +2,9 @@
   <div>
     <p>Shape</p>
     <select v-model="shape.shape">
-      <option value="static">static</option>
-      <option value="dynamic">dynamic</option>
-      <option value="kinematic">kinematic</option>
+        <option value="box">box</option>
+        <option value="sphere">sphere</option>
+        <option value="cylinder">cylinder</option>
     </select>
     <p>Size</p>
     <Transform :values="shape.size"/>

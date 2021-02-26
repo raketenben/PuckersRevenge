@@ -5,17 +5,8 @@ const LevelSchema = new mongoose.Schema({
     objects: [
         {
             name: String,
-            position: {
-                x: mongoose.Decimal128,
-                y: mongoose.Decimal128,
-                z: mongoose.Decimal128
-            },
-            rotation: {
-                x: mongoose.Decimal128,
-                y: mongoose.Decimal128,
-                z: mongoose.Decimal128,
-                w: mongoose.Decimal128
-            },
+            position: {},
+            rotation: {},
             attributes: [{
                 name: String,
                 value: String
@@ -24,3 +15,10 @@ const LevelSchema = new mongoose.Schema({
     ]
 })
 module.exports = LevelSchema
+/**
+ * 
+                x: mongoose.Decimal128,
+                y: mongoose.Decimal128,
+                z: mongoose.Decimal128
+            
+ */

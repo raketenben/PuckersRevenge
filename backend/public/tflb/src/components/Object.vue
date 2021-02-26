@@ -3,11 +3,7 @@
   <h1>Object Stuff</h1>
     <p>Name</p> 
     <input type="text" v-model="object.name">
-    <p>Environment</p>
-    <input type="text" v-model="object.environment">
-    <p>Model</p>
-    <input type="text" v-model="object.model">
-    
+
     <p>HitBoxes <button @click="addHitBox">Add</button></p>
     <div v-for="(hitBox, index) in object.hitBoxes" v-bind:key="index">
         <HitBox :hitBox="hitBox" />
@@ -33,7 +29,7 @@ export default {
         },
         addHitBox: function () {
             this.object.hitBoxes.push({
-                type: "",
+                type: 'static',
                 mass: 0,
                 shapes: []
             })

@@ -4,7 +4,7 @@
     <p>Name</p> 
     <input type="text" v-model="level.name">
     <p>Objects <button @click="addLevelObject">Add</button></p>
-    <div v-for="(LevelObject, index) in level.Objects" :key="index">
+    <div v-for="(LevelObject, index) in level.objects" :key="index">
       <LevelObject :LevelObject="LevelObject"/>
       <button @click="deleteElement(index)">Delete</button>
     </div>
@@ -24,15 +24,15 @@ export default {
     },
     methods: {
       addLevelObject: function() {
-        this.level.Objects.push({
+        this.level.objects.push({
           name: '',
-          size: {},
           position: {},
-          rotation: {}
+          rotation: {},
+          attributes: []
         })
       },
       deleteElement: function(key) {
-        this.level.Objects.splice(key,1)
+        this.level.objects.splice(key,1)
       }
     },
     created: function() {
@@ -45,7 +45,7 @@ export default {
       return {
         level: {
           name: '',
-          Objects: []
+          objects: []
         }
       }
     }

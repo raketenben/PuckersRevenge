@@ -1,7 +1,13 @@
 <template>
   <div>
-    <input type="text" v-model="hitBox.type" placeholder="type">
+    <p>Type</p>
+    <select v-model="hitBox.type">
+        <option value="static">static</option>
+        <option value="dynamic">dynamic</option>
+        <option value="kinematic">kinematic</option>
+    </select>
     <br>
+    <p>Mass</p>
     <input type="number" v-model="hitBox.mass" placeholder="mass">
     <p>Shapes <button @click="addShape">Add</button></p> 
     <div v-for="(shape, index) in hitBox.shapes" v-bind:key="index">
@@ -25,7 +31,7 @@ export default {
         },
         addShape: function () {
             this.$props.hitBox.shapes.push({
-                    shape: 'static',
+                    shape: 'box',
                     size: {},
                     position: {},
                     rotation: {}
