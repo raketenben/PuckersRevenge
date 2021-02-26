@@ -49,11 +49,11 @@ export default {
       this.list = false
     },
     submit: async function() {
-      console.log(JSON.parse(JSON.stringify(this.$refs["formulars"][this.path])))
+      //console.log(JSON.parse(JSON.stringify(this.$refs["formulars"][this.path])))
       let data = {}
       try {
       const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/${this.path}/`, {
-        method: 'POST',
+        method: (this.editElemet ? 'PATCH':'POST'),
         headers: {
           'Access-Control-Allow-Headers': '*',
           'Access-Control-Allow-Origin': '*',

@@ -21,7 +21,7 @@ router.get('/', async (req, res) => {
   router.get('/:name', async (req, res) => {
     Object.find({name: req.params.name},function (err, obj) {
       if(err) return console.error(err)
-        res.json(obj[0])
+      res.json(obj[0])
     })
   })
   router.delete('/:name', async (req, res) => {
@@ -29,13 +29,13 @@ router.get('/', async (req, res) => {
       if(err) {
         console.error(err)
         res.json({error:'error'})
-      } else res.json({mgs:'Ok'})
+      } else res.json({msg:'Ok'})
     })
   })
 
 router.post('/', async (req, res) => {
   let unique = false;
-  console.log(req.body.payload)
+  //console.log(JSON.stringify(req.body.payload,null,4))
 
   await Object.find({name: req.body.payload.name},function (err, obj) {
     if(err) return console.error(err)
@@ -45,6 +45,15 @@ router.post('/', async (req, res) => {
 
   const obj = new Object(req.body.payload);
   obj.save().then(() => res.json({msg: "Ok"})).catch((e) => res.json({error: e}))   
+})
+
+router.patch('/', async (req, res) => {
+  Object.updateOne({_id: req.body.payload._id}, req.body.payload, function (err) {
+    if(err) {
+      console.error(err)
+      res.json({error:'error'})
+    } else res.json({msg:'Ok'})
+  })   
 })
 
 module.exports = router

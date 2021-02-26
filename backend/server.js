@@ -6,6 +6,7 @@ const app = express()
 const port = 3748
 
 app.use(bodyParser.json({ limit: '50mb'}))
+app.use(express.json({ limit: "500mb" }));
 app.use(cors())
 
 app.all('/', function(req, res, next) {

@@ -29,7 +29,7 @@ router.get('/', async (req, res) => {
       if(err) {
         console.error(err)
         res.json({error:'error'})
-      } else res.json({mgs:'Ok'})
+      } else res.json({msg:'Ok'})
     })
   })
 
@@ -44,6 +44,15 @@ router.post('/', async (req, res) => {
 
   const lev = new Level(req.body.payload);
   lev.save().then(() => res.json({msg: "Ok"})).catch((e) => res.json({error: e}))   
+})
+
+router.patch('/', async (req, res) => {
+  Level.updateOne({_id: req.body.payload._id}, req.body.payload, function (err) {
+    if(err) {
+      console.error(err)
+      res.json({error:'error'})
+    } else res.json({msg:'Ok'})
+  })   
 })
 
 module.exports = router

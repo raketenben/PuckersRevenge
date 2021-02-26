@@ -3,13 +3,13 @@
   <h1>Object Stuff</h1>
     <p>Name</p> 
     <input type="text" v-model="object.name">
-    <p>Enviroment</p> 
-    <input type="file" @change="setEnviroment">
+    <p>Environment</p>
+    <input type="text" v-model="object.environment">
     <p>Model</p>
-    <input type="file" @change="setModel">
+    <input type="text" v-model="object.model">
     
     <p>HitBoxes <button @click="addHitBox">Add</button></p>
-    <div v-for="(hitBox, index) in object.hitboxes" v-bind:key="index">
+    <div v-for="(hitBox, index) in object.hitBoxes" v-bind:key="index">
         <HitBox :hitBox="hitBox" />
         <button @click="deleteElement(index)">Delete</button>
     </div>
@@ -29,32 +29,14 @@ export default {
     },
     methods: {
         deleteElement: function(key) {
-            this.object.hitboxes.splice(key,1)
+            this.object.hitBoxes.splice(key,1)
         },
         addHitBox: function () {
-            this.object.hitboxes.push({
+            this.object.hitBoxes.push({
                 type: "",
                 mass: 0,
                 shapes: []
             })
-        },
-        setEnviroment: function (event) {
-            let file = event.target.files[0]
-            let reader = new FileReader()
-            reader.addEventListener('load', (data) => {
-                this.object.environment = data.target.result
-
-            })
-            reader.readAsBinaryString(file)
-        },
-        setModel: function (event) {
-            let file = event.target.files[0]
-            let reader = new FileReader()
-            reader.addEventListener('load', (data) => {
-                this.object.model = data.target.result
-
-            })
-            reader.readAsBinaryString(file)
         }
     },
     created() {
@@ -67,9 +49,9 @@ export default {
         return {
             object: {
                 name: "",
-                environment: null,
-                model: null,
-                hitboxes: []
+                environment: '',
+                model: '',
+                hitBoxes: []
             }
         }
     }
