@@ -1,3 +1,5 @@
+//const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
+const apiEndpoint = "https://dev.caesi.dev";
 const databaseName = "PuckersRevenge";
 const databaseVersion = 2;
 const objectStoreName = "assets";
@@ -77,9 +79,7 @@ class assetManager {
         return new Promise((res,rej) => {
             this.blobToDataURL(object.object).then((modelDataUrl) => {
                 this.blobToDataURL(object.env).then((enviromentDataUrl) => {
-                    this.blobToDataURL(object.hitbox).then((hitboxDataUrl) => {
-                        res({name:object.name,env:enviromentDataUrl,object:modelDataUrl,hitbox:hitboxDataUrl});
-                    },rej);
+                    res({name:object.name,env:enviromentDataUrl,object:modelDataUrl,hitBoxes:object.hitBoxes});
                 },rej);
             },rej);
         });
@@ -89,26 +89,48 @@ class assetManager {
         let currentTotal = 0;
         let previousTotal = 0;
         let loaded = 0;
-        this.downloadAsBlob(`/assets/${objectName}/model.glb`,(model) => {
+        /*
+        this.downloadAsBlob(`https://puckersrevenge.if-loop.mywire.org/api/object/${objectName}`,(response) => {
+            response.text().then((data) => {
+                console.log(data);
+                data = JSON.parse(data);
+                res({
+                    name:objectName,
+                    object:new Blob([data.model.data]),
+                    env:new Blob([data.environment.data]),
+                    hitbox:new Blob([JSON.stringify(data.hitBoxes)])
+                })
+            },(err) => {
+                rej(err);
+            });
+        },(progress) => {
+            currentTotal = previousTotal + progress.total;
+            loaded = previousTotal + progress.loaded;
+            prog({total:currentTotal,loaded:loaded,tag:"hitbox"});
+        },rej);*/
+        this.downloadAsBlob(`${apiEndpoint}/api/object/${objectName}`,(objectData) => {
             previousTotal = currentTotal;
-            this.downloadAsBlob(`/assets/${objectName}/env.png`,(enviroment) => {
+            this.downloadAsBlob(`${apiEndpoint}/resources/${objectName}/model.glb`,(model) => {
                 previousTotal = currentTotal;
-                this.downloadAsBlob(`/assets/${objectName}/hitbox.hitbox`,(hitbox) => {
-                    res({name:objectName,env:enviroment,object:model,hitbox:hitbox})
+                this.downloadAsBlob(`${apiEndpoint}/resources/${objectName}/env.png`,(enviroment) => {
+                    objectData.text().then((dataText) => {
+                        let data = JSON.parse(dataText);
+                        res({name:objectName,env:enviroment,object:model,hitBoxes:data.hitBoxes})
+                    })
                 },(progress) => {
                     currentTotal = previousTotal + progress.total;
                     loaded = previousTotal + progress.loaded;
-                    prog({total:currentTotal,loaded:loaded,tag:"hitbox"});
+                    prog({total:currentTotal,loaded:loaded,tag:"enviroment"});
                 },rej);
             },(progress) => {
                 currentTotal = previousTotal + progress.total;
                 loaded = previousTotal + progress.loaded;
-                prog({total:currentTotal,loaded:loaded,tag:"enviroment"});
+                prog({total:currentTotal,loaded:loaded,tag:"model"});
             },rej);
         },(progress) => {
             currentTotal = previousTotal + progress.total;
             loaded = previousTotal + progress.loaded;
-            prog({total:currentTotal,loaded:loaded,tag:"model"});
+            prog({total:currentTotal,loaded:loaded,tag:"objectData"});
         },rej);
     }
 

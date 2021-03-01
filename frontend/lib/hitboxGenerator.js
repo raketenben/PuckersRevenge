@@ -31,9 +31,8 @@ class hitboxGenerator {
     }
 
     shapeFromJSON(obj,json){
-        if(typeof json === 'string' || json instanceof String) json = JSON.parse(json);
         for (const shapeData of json) {
-            switch(shapeData.type){
+            switch(shapeData.shape){
                 case 'box':
                     let size = new CANNON.Vec3(shapeData.size.x,shapeData.size.y,shapeData.size.z);
                     this.shape = new CANNON.Box(size);
@@ -45,17 +44,17 @@ class hitboxGenerator {
                     this.shape = new CANNON.Cylinder(shapeData.size.topRadius,shapeData.size.bottomRadius,shapeData.offset.height,shapeData.offset.segments);
                     break;
                 default:
-                    console.warn(`${shapeData.type} is not a valid type`);
+                    console.warn(`${shapeData.shape} is not a valid type`);
             }
-            if(shapeData.offset){
-                this.offset.set(shapeData.offset.x,shapeData.offset.y,shapeData.offset.z);
-            }else{
+            if(!shapeData.position){
                 this.offset.set(0,0,0);
-            }
-            if(shapeData.orientation){
-                this.orientation.set(shapeData.orientation.x,shapeData.orientation.y,shapeData.orientation.z,shapeData.orientation.w);
             }else{
+                this.offset.set(shapeData.position.x,shapeData.position.y,shapeData.position.z);
+            }
+            if(!shapeData.orientation){
                 this.orientation.set(0,0,0,1);
+            }else{
+                this.orientation.set(shapeData.orientation.x,shapeData.orientation.y,shapeData.orientation.z,shapeData.orientation.w);
             }
             obj.addShape(this.shape,this.offset,this.orientation);
         }

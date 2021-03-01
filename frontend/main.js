@@ -109,7 +109,6 @@ function init() {
     scene.add(user);
 
     //setup renderer
-    //
     renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", precision:"highp"});
     renderer.xr.enabled = true;
     renderer.xr.setReferenceSpaceType( 'local-floor' );
@@ -130,9 +129,8 @@ function init() {
     let shape1 = new CANNON.Sphere(0.15);
     playerBox = new CANNON.Body({ mass: 65 , material: playerMaterial});
     playerBox.angularDamping = 1;
-    playerBox.type = CANNON.Body.DYNAMIC;
-    playerBox.position.y = 0.02;
-    playerBox.position.x = 0;
+    //playerBox.type = CANNON.Body.DYNAMIC;
+    playerBox.position.y = 0.01;
 
     playerBox.addShape(shape1,new CANNON.Vec3(0,0.15,0));
     physicsWorld.addBody(playerBox);
@@ -156,7 +154,7 @@ function init() {
     renderer.xr.addEventListener('sessionend', sessionEnded);
 
     //level loader
-    levelLoader.init(scene,renderer,physicsWorld).then(() => {
+    levelLoader.init(scene,renderer,physicsWorld,defaultMaterial).then(() => {
         levelLoader.load("test1",(data) => {
             console.log("finished loading");
             progressDisplay.classList.add("hidden");
@@ -379,7 +377,7 @@ function drawFrame(frameTime,frame){
     //animations
 	//mixer.update( delta);
 
-    handleElevators(frame,delta,pose);
+    //handleElevators(frame,delta,pose);
     
     handleInputs(frame,delta,pose);
     handleInteractions(frame,delta,pose);
@@ -402,7 +400,7 @@ function drawDesktopFrame(frameTime,frame){
         //animations
         //mixer.update(delta);
 
-        handleElevators(frame,delta,pose);
+        //handleElevators(frame,delta,pose);
         
         handleInputsDesktop(frame,delta);
         handleInteractionsDesktop(frame,delta);
@@ -410,6 +408,8 @@ function drawDesktopFrame(frameTime,frame){
         updateAndMatchPhysics(delta,pose);
 
         //cannonDebug.update();
+
+        console.log(playerBox.position,physicsWorld);
 
         renderer.render(scene, camera);
 
@@ -603,7 +603,8 @@ let deltaPosition = new THREE.Vector3();
 let rotatedDelta = new THREE.Vector3();
 function updateAndMatchPhysics(delta,pose){
     //update physics world
-    physicsWorld.step(delta);
+    console.log(delta)
+    physicsWorld.step(1 / 60,delta);
 
     //get current Playe height
     playerHeight.setY(pose.transform.position.y);
