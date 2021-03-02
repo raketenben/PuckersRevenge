@@ -1,5 +1,15 @@
 {
     "name":"test1",
+    "levelEntry":{
+        "x":0,
+        "y":0,
+        "z":0
+    },
+    "levelExit":{
+        "x":0,
+        "y":0,
+        "z":0
+    },
     "objects":[
         {
             "name":"elevator",
