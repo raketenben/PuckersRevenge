@@ -1,5 +1,5 @@
 //const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
-const apiEndpoint = "https://dev.caesi.dev";
+const apiEndpoint = "";
 const databaseName = "PuckersRevenge";
 const databaseVersion = 2;
 const objectStoreName = "assets";
@@ -89,25 +89,6 @@ class assetManager {
         let currentTotal = 0;
         let previousTotal = 0;
         let loaded = 0;
-        /*
-        this.downloadAsBlob(`https://puckersrevenge.if-loop.mywire.org/api/object/${objectName}`,(response) => {
-            response.text().then((data) => {
-                console.log(data);
-                data = JSON.parse(data);
-                res({
-                    name:objectName,
-                    object:new Blob([data.model.data]),
-                    env:new Blob([data.environment.data]),
-                    hitbox:new Blob([JSON.stringify(data.hitBoxes)])
-                })
-            },(err) => {
-                rej(err);
-            });
-        },(progress) => {
-            currentTotal = previousTotal + progress.total;
-            loaded = previousTotal + progress.loaded;
-            prog({total:currentTotal,loaded:loaded,tag:"hitbox"});
-        },rej);*/
         this.downloadAsBlob(`${apiEndpoint}/api/object/${objectName}`,(objectData) => {
             previousTotal = currentTotal;
             this.downloadAsBlob(`${apiEndpoint}/resources/${objectName}/model.glb`,(model) => {
