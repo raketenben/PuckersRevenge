@@ -1,4 +1,5 @@
-const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
+//const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
+const apiEndpoint = "";
 
 import HitboxGenerator from './hitboxGenerator.js';
 import assetManager from "./assetManager.js";
@@ -31,7 +32,7 @@ class levelLoader {
         })
     }
 
-    addObjectToScene(object,res,prog,rej){
+    addObjectToScene(object,offset,res,prog,rej){
         this.assetManager.retrieveObject(object.name,(asset) => {
             this.gltfLoader.load(asset.object, (gltf) => {
                 this.textureLoader.load(asset.env,(texture) => {
@@ -42,12 +43,12 @@ class levelLoader {
                     });
 
                     //add hitbox
-                    console.log(asset)
                     let body = this.hitboxGenerator.bodyFromJSON(asset.hitBoxes[0]);
-                    body.position.set(parseFloat(object.position.x),parseFloat(object.position.y),parseFloat(object.position.z))
+                    body.position.set(parseFloat(object.position.x)+offset.x,parseFloat(object.position.y)+offset.y,parseFloat(object.position.z)+offset.z)
                     this.physicsWorld.addBody(body);
 
                     gltf.scene.position.copy(object.position)
+                    gltf.scene.position.add(offset)
                     gltf.scene.userData.imposter = body;
 
                     //add object to scene
@@ -59,7 +60,7 @@ class levelLoader {
         },prog,rej);
     }
 
-    load(levelname,res,prog,rej){
+    load(levelname,offset,res,prog,rej){
         this.loadLevelFile(levelname,(levelFile) => {
             let total = levelFile.objects.length;
             let loaded = 0;
@@ -70,7 +71,7 @@ class levelLoader {
             }
 
             let nextLoad = () => {
-                this.addObjectToScene(levelFile.objects[loaded],() => {
+                this.addObjectToScene(levelFile.objects[loaded],offset,() => {
                     loaded++;
                     if(loaded == total) {
                         sendProgressUpdate({total:1,loaded:1,tag:"finished"})
