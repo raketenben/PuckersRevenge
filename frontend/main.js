@@ -118,6 +118,9 @@ function init() {
     renderer.physicallyCorrectLights = true;
     renderer.outputEncoding = THREE.sRGBEncoding;
 
+    renderer.extensions.get("OCULUS_multiview");
+    renderer.extensions.get("OVR_multiview2");
+
     //physics
     physicsWorld = new CANNON.World();
     physicsWorld.gravity.set(0,-9.82,0);
