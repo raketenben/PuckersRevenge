@@ -1,0 +1,21 @@
+{
+    "name":"test1",
+    "objects":[
+        {
+            "name":"elevator",
+            "position":{
+                "x":0,
+                "y":0,
+                "z":0
+            }
+        },
+        {
+            "name":"elevator-room",
+            "position":{
+                "x":0,
+                "y":0,
+                "z":0
+            }
+        }
+    ]
+}
