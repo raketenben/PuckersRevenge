@@ -1,6 +1,7 @@
 import { XRControllerModelFactory } from './node_modules/three/examples/jsm/webxr/XRControllerModelFactory.js';
 import LevelLoader from './lib/levelLoader.js';
 
+const canvas = document.getElementById("game");
 const enterVrButton = document.getElementById("enterVR");
 const enterDesktopButton = document.getElementById("enterDesktop");
 const progressDisplay = document.getElementById("progress");
@@ -46,6 +47,7 @@ const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial,player
 //desktop player settings
 const playerHeightDesktop = 1.55;
 const playerMouseSenseDesktop = (Math.PI/180)*0.25;
+const playerCursorRadiusDesktop = 64;
 
 //player settings
 const playerSpeed = 1.5;
@@ -109,7 +111,7 @@ function init() {
     scene.add(user);
 
     //setup renderer
-    renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", precision:"highp"});
+    renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias: false, powerPreference: "high-performance", precision:"highp"});
     renderer.xr.enabled = true;
     renderer.xr.setReferenceSpaceType( 'local-floor' );
     renderer.setSize(window.innerWidth, window.innerHeight);
@@ -144,9 +146,6 @@ function init() {
     const geometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
     const material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
 
-    //show canvas
-    document.body.appendChild(renderer.domElement);
-
     //show stats
     document.body.appendChild(stats.domElement);
 
@@ -155,7 +154,7 @@ function init() {
 
     //level loader
     levelLoader.init(scene,renderer,physicsWorld,defaultMaterial).then(() => {
-        levelLoader.load("test1",(data) => {
+        levelLoader.load("test1",new THREE.Vector3(0,0,0),(data) => {
             console.log("finished loading");
             progressDisplay.classList.add("hidden");
             renderer.render(scene, camera);
@@ -312,10 +311,10 @@ function handleInteractionsDesktop(v){
 let playerDesktopView = [0,0];
 function handleMousemovementDesktop(e){
     if(pointerLockState == true) {
-        if(e.movementX > 16) return;
-        if(e.movementX < -16) return;
-        if(e.movementY > 16) return;
-        if(e.movementY < -16) return;
+        if(e.movementX > playerCursorRadiusDesktop) return;
+        if(e.movementX < -playerCursorRadiusDesktop) return;
+        if(e.movementY > playerCursorRadiusDesktop) return;
+        if(e.movementY < -playerCursorRadiusDesktop) return;
 
         playerDesktopView[0] -= e.movementX * playerMouseSenseDesktop;
         if(
@@ -367,10 +366,6 @@ function drawFrame(frameTime,frame){
 
     stats.begin();
 
-    //show pivot
-    //pivot.position.copy(playerBox.position);
-    //pivot.position.setY(playerBox.position.y + 0.5);
-    
     delta = clock.getDelta();
     pose = frame.getViewerPose(xrReferenceSpace);
 
@@ -408,8 +403,6 @@ function drawDesktopFrame(frameTime,frame){
         updateAndMatchPhysics(delta,pose);
 
         //cannonDebug.update();
-
-        console.log(playerBox.position,physicsWorld);
 
         renderer.render(scene, camera);
 
@@ -603,7 +596,6 @@ let deltaPosition = new THREE.Vector3();
 let rotatedDelta = new THREE.Vector3();
 function updateAndMatchPhysics(delta,pose){
     //update physics world
-    console.log(delta)
     physicsWorld.step(1 / 60,delta);
 
     //get current Playe height
