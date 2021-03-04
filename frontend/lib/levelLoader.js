@@ -54,11 +54,12 @@ class levelLoader {
                     gltf.scene.position.add(offset)
 
                     //add object to scene
-                    let ret = this.scene.add(gltf.scene);
-                    ret.name = asset.name;
-                    ret.userData.imposter = body;
-                    ret.userData.hitboxes = asset.hitBoxes;
-                    res(ret);
+                    gltf.scene.name = asset.name;
+                    gltf.scene.userData.imposter = body;
+                    gltf.scene.userData.hitboxes = asset.hitBoxes;
+                    this.scene.add(gltf.scene);
+
+                    res();
                 },null,rej)
             },rej);
         },prog,rej);
@@ -68,7 +69,6 @@ class levelLoader {
         this.loadLevelFile(levelname,(levelFile) => {
             let total = levelFile.objects.length;
             let loaded = 0;
-            let objects = new Array();
 
             function sendProgressUpdate(xhr){
                 xhr.objectTotal = total;
@@ -77,13 +77,11 @@ class levelLoader {
             }
 
             let nextLoad = () => {
-                this.addObjectToScene(levelFile.objects[loaded],offset,(obj) => {
+                this.addObjectToScene(levelFile.objects[loaded],offset,() => {
                     loaded++;
-                    console.log(obj)
-                    objects.push(obj);
                     if(loaded == total) {
                         sendProgressUpdate({total:1,loaded:1,tag:"finished"})
-                        return res(levelFile,objects);
+                        return res(levelFile);
                     }else
                         nextLoad()
                 },(xhr) => {

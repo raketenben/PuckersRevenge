@@ -158,10 +158,9 @@ function init() {
 
     //level loader
     levelLoader.init(scene,renderer,physicsWorld,defaultMaterial).then(() => {
-        levelLoader.load("test1",new THREE.Vector3(0,0,0),(levelFile,levelObjects) => {
-            console.log(levelObjects)
-            levelObjects[1].userData.imposter.velocity.set(0,1,0);
-            console.log(levelObjects[1].userData.imposter);
+        levelLoader.load("test1",new THREE.Vector3(0,0,0),(levelFile) => {
+            console.log(scene)
+            console.log(physicsWorld)
 
             currentEntryPosition = (new THREE.Vector3()).copy(levelFile.levelEntry);
             currentExitPosition = (new THREE.Vector3()).copy(levelFile.levelExit);
@@ -411,6 +410,7 @@ function drawDesktopFrame(frameTime,frame){
 
         //handleElevators(frame,delta,pose);
         
+        
         handleInputsDesktop(frame,delta);
         handleInteractionsDesktop(frame,delta);
 
@@ -611,6 +611,11 @@ let rotatedDelta = new THREE.Vector3();
 function updateAndMatchPhysics(delta,pose){
     //update physics world
     physicsWorld.step(1 / 60,delta);
+
+    //update object positions to physics
+    for (let i = 0; i < physicsWorld.bodies.length; i++)
+        if(scene.children[i+1]) 
+            scene.children[i+1].position.copy(physicsWorld.bodies[i].position);
 
     //get current Playe height
     playerHeight.setY(pose.transform.position.y);
