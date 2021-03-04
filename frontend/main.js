@@ -76,6 +76,9 @@ const raycaster = new THREE.Raycaster();
 
 let playerHeight = new THREE.Vector3(0,0,0);
 
+let currentEntryPosition;
+let currentExitPosition; 
+
 let stats, clock;
 let camera, camera1, scene, renderer;
 let xrSession, xrReferenceSpace;
@@ -127,14 +130,12 @@ function init() {
     physicsWorld.broadphase = new CANNON.NaiveBroadphase();
     physicsWorld.defaultContactMaterial = defaultContactMaterial;
     physicsWorld.addContactMaterial(defaultContactMaterial);
-    //physicsWorld.solver.iterations = 20;
-    //physicsWorld.solver.tolerance = 0;
 
     //add hitbox
     let shape1 = new CANNON.Sphere(0.15);
     playerBox = new CANNON.Body({ mass: 65 , material: playerMaterial});
     playerBox.angularDamping = 1;
-    //playerBox.type = CANNON.Body.DYNAMIC;
+    playerBox.type = CANNON.Body.DYNAMIC;
     playerBox.position.y = 0.01;
 
     playerBox.addShape(shape1,new CANNON.Vec3(0,0.15,0));
@@ -157,7 +158,17 @@ function init() {
 
     //level loader
     levelLoader.init(scene,renderer,physicsWorld,defaultMaterial).then(() => {
-        levelLoader.load("test1",new THREE.Vector3(0,0,0),(data) => {
+        levelLoader.load("test1",new THREE.Vector3(0,0,0),(levelFile,levelObjects) => {
+            console.log(levelObjects)
+            levelObjects[1].userData.imposter.velocity.set(0,1,0);
+            console.log(levelObjects[1].userData.imposter);
+
+            currentEntryPosition = (new THREE.Vector3()).copy(levelFile.levelEntry);
+            currentExitPosition = (new THREE.Vector3()).copy(levelFile.levelExit);
+
+            console.log(currentEntryPosition)
+            console.log(currentExitPosition)
+            
             console.log("finished loading");
             progressDisplay.classList.add("hidden");
             renderer.render(scene, camera);
@@ -396,7 +407,7 @@ function drawDesktopFrame(frameTime,frame){
     if(pointerLockState == true){
         stats.begin();
         //animations
-        //mixer.update(delta);
+        //  mixer.update(delta);
 
         //handleElevators(frame,delta,pose);
         
@@ -405,7 +416,7 @@ function drawDesktopFrame(frameTime,frame){
 
         updateAndMatchPhysics(delta,pose);
 
-        //cannonDebug.update();
+        cannonDebug.update();
 
         renderer.render(scene, camera);
 
