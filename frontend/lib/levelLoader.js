@@ -14,6 +14,9 @@ class levelLoader {
     renderer;
     physicsWorld;
 
+    currentEntryPosition;
+    currentExitPosition;
+
     constructor(){
         this.textureLoader = new THREE.TextureLoader();
         this.gltfLoader = new THREE.GLTFLoader();
@@ -49,12 +52,13 @@ class levelLoader {
 
                     gltf.scene.position.copy(object.position)
                     gltf.scene.position.add(offset)
-                    gltf.scene.userData.imposter = body;
 
                     //add object to scene
-                    this.scene.add( gltf.scene)
-
-                    res();
+                    let ret = this.scene.add(gltf.scene);
+                    ret.name = asset.name;
+                    ret.userData.imposter = body;
+                    ret.userData.hitboxes = asset.hitBoxes;
+                    res(ret);
                 },null,rej)
             },rej);
         },prog,rej);
@@ -64,6 +68,8 @@ class levelLoader {
         this.loadLevelFile(levelname,(levelFile) => {
             let total = levelFile.objects.length;
             let loaded = 0;
+            let objects = new Array();
+
             function sendProgressUpdate(xhr){
                 xhr.objectTotal = total;
                 xhr.objectLoaded = loaded;
@@ -71,11 +77,13 @@ class levelLoader {
             }
 
             let nextLoad = () => {
-                this.addObjectToScene(levelFile.objects[loaded],offset,() => {
+                this.addObjectToScene(levelFile.objects[loaded],offset,(obj) => {
                     loaded++;
+                    console.log(obj)
+                    objects.push(obj);
                     if(loaded == total) {
                         sendProgressUpdate({total:1,loaded:1,tag:"finished"})
-                        return res(levelFile);
+                        return res(levelFile,objects);
                     }else
                         nextLoad()
                 },(xhr) => {
