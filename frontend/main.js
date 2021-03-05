@@ -371,11 +371,9 @@ function findClipsByName(animations,names) {
     return ret;
 }
 
-let firstFrame = true;
 let delta = 0;
 let pose = null;
 function drawFrame(frameTime,frame){
-    //xrSession.requestAnimationFrame(drawFrame);
 
     stats.begin();
 
@@ -383,7 +381,7 @@ function drawFrame(frameTime,frame){
     pose = frame.getViewerPose(xrReferenceSpace);
 
     //animations
-	//mixer.update( delta);
+    //mixer.update( delta);
 
     //handleElevators(frame,delta,pose);
     
