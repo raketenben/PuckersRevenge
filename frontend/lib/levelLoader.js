@@ -1,6 +1,8 @@
 //const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
 const apiEndpoint = "";
 
+import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+
 import HitboxGenerator from './hitboxGenerator.js';
 import assetManager from "./assetManager.js";
 
@@ -19,7 +21,7 @@ class levelLoader {
 
     constructor(){
         this.textureLoader = new THREE.TextureLoader();
-        this.gltfLoader = new THREE.GLTFLoader();
+        this.gltfLoader = new GLTFLoader();
         this.assetManager = new assetManager();
     }
 
