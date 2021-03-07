@@ -1,5 +1,7 @@
 import { XRControllerModelFactory } from './node_modules/three/examples/jsm/webxr/XRControllerModelFactory.js';
 import LevelLoader from './lib/levelLoader.js';
+import HitboxGenerator from './lib/hitboxGenerator.js';
+import InputManager from './lib/inputManager.js';
 
 const canvas = document.getElementById("game");
 const enterVrButton = document.getElementById("enterVR");
@@ -76,6 +78,9 @@ const raycaster = new THREE.Raycaster();
 
 let playerHeight = new THREE.Vector3(0,0,0);
 
+let hitboxGenerator = new HitboxGenerator(defaultMaterial);
+let inputManager = new InputManager();
+
 let currentEntryPosition;
 let currentExitPosition; 
 
@@ -138,17 +143,13 @@ function init() {
     playerBox.type = CANNON.Body.DYNAMIC;
     playerBox.position.y = 0.01;
 
-    playerBox.addShape(shape1,new CANNON.Vec3(0,0.15,0));
+    playerBox.addShape(shape1,new CANNON.Vec3(0,0.10,0));
     physicsWorld.addBody(playerBox);
 
     //utilities
     stats = new Stats();
     clock = new THREE.Clock();
     cannonDebug = new THREE.CannonDebugRenderer( scene, physicsWorld );
-
-    //pivot
-    const geometry = new THREE.BoxGeometry( 0.1, 0.1, 0.1 );
-    const material = new THREE.MeshBasicMaterial( {color: 0xffffff} );
 
     //show stats
     document.body.appendChild(stats.domElement);
@@ -159,8 +160,10 @@ function init() {
     //level loader
     levelLoader.init(scene,renderer,physicsWorld,defaultMaterial).then(() => {
         levelLoader.load("test1",new THREE.Vector3(0,0,0),(levelFile) => {
-            console.log(scene)
-            console.log(physicsWorld)
+
+            let i = 1;
+            console.log(scene.children[i+1].userData.hitboxes)
+            //hitboxGenerator.updateBodyFromJSON(physicsWorld.bodies[i],scene.children[i+1].userData.hitboxes[1]);
 
             currentEntryPosition = (new THREE.Vector3()).copy(levelFile.levelEntry);
             currentExitPosition = (new THREE.Vector3()).copy(levelFile.levelExit);
@@ -237,8 +240,8 @@ function onDesktopStart(){
     renderer.domElement.requestPointerLock();
 
     document.addEventListener("mousemove",  handleMousemovementDesktop, false);
-    document.addEventListener('keydown', handleKeyDownDesktop, false);
-    document.addEventListener('keyup', handleKeyUpDesktop, false);
+    //document.addEventListener('keydown', handleKeyDownDesktop, false);
+    //document.addEventListener('keyup', handleKeyUpDesktop, false);
     document.addEventListener("click",  recaptureMouse, false);
 
     clock.getDelta()
@@ -257,59 +260,6 @@ function pointerLockChanged(){
 function recaptureMouse(){
     renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock;
     renderer.domElement.requestPointerLock();
-}
-
-let sprintPressState = false;
-let leftPressState = false;
-let rightPressState = false;
-let upPressState = false;
-let downPressState = false;
-function handleKeyDownDesktop(e){
-    switch(e.key.toLowerCase()){
-        case "a":
-            leftPressState = true;
-        break;
-        case "d":
-            rightPressState = true;
-        break;
-        case "w":
-            upPressState = true;
-        break;
-        case "s":
-            downPressState = true;
-        break;
-        case "control":
-            sprintPressState = true;
-        break;
-        case "c":
-            camera.zoom = playerZoomFactorDektop;
-            camera.updateProjectionMatrix();
-        break;
-    }
-}
-
-function handleKeyUpDesktop(e){
-    switch(e.key.toLowerCase()){
-        case "a":
-            leftPressState = false;
-        break;
-        case "d":
-            rightPressState = false;
-        break;
-        case "w":
-            upPressState = false;
-        break;
-        case "s":
-            downPressState = false;
-        break;
-        case "control":
-            sprintPressState = false;
-        break;
-        case "c":
-            camera.zoom = 1;
-            camera.updateProjectionMatrix();
-        break;
-    }
 }
 
 function handleInteractionsDesktop(v){
@@ -344,14 +294,14 @@ function handleMousemovementDesktop(e){
 
 function handleInputsDesktop(){
     //get gamepad input
-    offsetPos.set((leftPressState ? -1 : (rightPressState ? 1 : 0)),0,(upPressState ? -1 : (downPressState ? 1 : 0)));
+    offsetPos.set((inputManager.get("a") ? -1 : (inputManager.get("d") ? 1 : 0)),0,(inputManager.get("w") ? -1 : (inputManager.get("s") ? 1 : 0)));
 
     //slow down if multiple directions
     offsetPos.multiplyScalar(1.2*((Math.abs(Math.abs(offsetPos.x)-Math.abs(offsetPos.z))/2)+0.5));
 
     //apply playerSpeed
     offsetPos.multiplyScalar(playerSpeed);
-    if(sprintPressState) offsetPos.multiplyScalar(playerSprintFactor);
+    if(inputManager.get("control")) offsetPos.multiplyScalar(playerSprintFactor);
     
     //apply head rotation and camera parent rotation
     offsetPos.applyQuaternion(camera.quaternion);
@@ -374,7 +324,6 @@ function findClipsByName(animations,names) {
 let delta = 0;
 let pose = null;
 function drawFrame(frameTime,frame){
-
     stats.begin();
 
     delta = clock.getDelta();
@@ -404,17 +353,16 @@ function drawDesktopFrame(frameTime,frame){
     if(pointerLockState == true){
         stats.begin();
         //animations
-        //  mixer.update(delta);
+        //mixer.update(delta);
 
         //handleElevators(frame,delta,pose);
-        
         
         handleInputsDesktop(frame,delta);
         handleInteractionsDesktop(frame,delta);
 
         updateAndMatchPhysics(delta,pose);
 
-        cannonDebug.update();
+        //cannonDebug.update();
 
         renderer.render(scene, camera);
 
@@ -576,8 +524,7 @@ function handleLeftGamepadInput(playerHeadSpace,xAxis,yAxis){
 
     //apply playerSpeed
     offsetPos.multiplyScalar(playerSpeed);
-    
-    //apply head rotation and camera parent rotation
+
     offsetPos.applyQuaternion(playerHeadSpace.orientation);
     offsetPos.applyQuaternion(user.quaternion);
 
@@ -623,6 +570,7 @@ function updateAndMatchPhysics(delta,pose){
     rotatedDelta.copy(deltaPosition);
     rotatedDelta.setY(0);
     rotatedDelta.applyQuaternion(user.quaternion);
+
     playerBox.position.vsub(rotatedDelta,playerBox.position);
     //reset delta
     deltaPosition.copy(pose.transform.position);
@@ -634,7 +582,6 @@ function updateAndMatchPhysics(delta,pose){
 let rotatedTransformVector = new THREE.Vector3();
 let currentTransformVector = new THREE.Vector3();
 function transformToGlobalLocation(space){
-    //const orientation = new THREE.Quaternion().copy(space.transform.orientation);
     rotatedTransformVector.copy(space.transform.position).applyQuaternion(user.quaternion);
     currentTransformVector.copy(user.position).add(rotatedTransformVector);
 
