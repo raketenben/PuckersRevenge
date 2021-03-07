@@ -11,8 +11,27 @@ class hitboxGenerator {
     orientation = new CANNON.Quaternion();
 
     bodyFromJSON(json){
-        let body = new CANNON.Body({ mass: json.mass, material: defaultMaterial});
-        switch(json.type){
+        let body = new CANNON.Body({material: defaultMaterial});
+        body.mass = json.mass;
+        this.setTypeFromJSON(body,json.type);
+        this.shapeFromJSON(body,json.shapes);
+        return body;
+    }
+
+    updateBodyFromJSON(body,json){
+        body.shapes.length = 0;
+        body.shapeOffsets.length = 0;
+        body.mass = json.mass;
+        this.setTypeFromJSON(body,json.type);
+        this.shapeFromJSON(body,json.shapes);
+        body.updateBoundingRadius();
+        body.updateMassProperties();
+        body.computeAABB();
+        return body;
+    }
+
+    setTypeFromJSON(body,type){
+        switch(type){
             case "static":
                 body.type = CANNON.Body.STATIC;
                 break;
@@ -26,11 +45,9 @@ class hitboxGenerator {
                 body.type = CANNON.Body.STATIC;
                 console.warn(`${json.type} is not a valid type`);
         }
-        this.shapeFromJSON(body,json.shapes);
-        return body;
     }
 
-    shapeFromJSON(obj,json){
+    shapeFromJSON(body,json){
         for (const shapeData of json) {
             switch(shapeData.shape){
                 case 'box':
@@ -49,16 +66,16 @@ class hitboxGenerator {
             if(!shapeData.position){
                 this.offset.set(0,0,0);
             }else{
-                this.offset.set(shapeData.position.x,shapeData.position.y,shapeData.position.z);
+                this.offset.copy(shapeData.position);
             }
             if(!shapeData.orientation){
                 this.orientation.set(0,0,0,1);
             }else{
-                this.orientation.set(shapeData.orientation.x,shapeData.orientation.y,shapeData.orientation.z,shapeData.orientation.w);
+                this.orientation.copy(shapeData.orientation);
             }
-            obj.addShape(this.shape,this.offset,this.orientation);
+            body.addShape(this.shape,this.offset,this.orientation);
         }
-        return obj;
+        return body;
     }
 }
 export default hitboxGenerator;
