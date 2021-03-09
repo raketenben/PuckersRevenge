@@ -1,23 +1,23 @@
 const defaultHitBox = [{
     type: '',
-    mass: 0.00,
+    mass: Number,
     shapes:[{
         shape: '',
         size: {
-            x: 0.00,
-            y: 0.00,
-            z: 0.00
+            x: Number,
+            y: Number,
+            z: Number
         },
         position: {
-            x: 0.00,
-            y: 0.00,
-            z: 0.00
+            x: Number,
+            y: Number,
+            z: Number
         },
         rotation: {
-            x: 0.00,
-            y: 0.00,
-            z: 0.00,
-            w: 0.00
+            x: Number,
+            y: Number,
+            z: Number,
+            w: Number
         }
     }]
 }]
@@ -25,8 +25,6 @@ const mongoose = require('mongoose')
 
 const ObjectSchema = new mongoose.Schema({
     name: String,
-    environment: String,
-    model: String,
     hitBoxes: {
         type: Array,
         default: defaultHitBox

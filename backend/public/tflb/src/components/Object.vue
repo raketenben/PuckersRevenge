@@ -5,7 +5,7 @@
     <input type="text" v-model="object.name">
 
     <p>HitBoxes <button @click="addHitBox">Add</button></p>
-    <div v-for="(hitBox, index) in object.hitBoxes" v-bind:key="index">
+    <div v-for="(hitBox, index) in object.hitBoxes" v-bind:key="index" class="div-list">
         <HitBox :hitBox="hitBox" />
         <button @click="deleteElement(index)">Delete</button>
     </div>
@@ -28,7 +28,7 @@ export default {
             this.object.hitBoxes.splice(key,1)
         },
         addHitBox: function () {
-            this.object.hitBoxes.push({
+            this.object.hitBoxes.unshift({
                 type: 'static',
                 mass: 0,
                 shapes: []
@@ -45,8 +45,6 @@ export default {
         return {
             object: {
                 name: "",
-                environment: '',
-                model: '',
                 hitBoxes: []
             }
         }

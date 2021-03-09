@@ -160,4 +160,8 @@ select {
 .errorBox {
   color: red
 }
+.div-list {
+  margin-left: .8em;
+  margin-bottom: 1.5em;
+}
 </style>

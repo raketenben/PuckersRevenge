@@ -24,7 +24,7 @@ export default {
     },
     methods: {
       addLevelObject: function() {
-        this.level.objects.push({
+        this.level.objects.unshift({
           name: '',
           position: {},
           rotation: {},

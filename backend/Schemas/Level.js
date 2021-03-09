@@ -5,8 +5,17 @@ const LevelSchema = new mongoose.Schema({
     objects: [
         {
             name: String,
-            position: {},
-            rotation: {},
+            position: {
+                x: Number,
+                y: Number,
+                z: Number
+            },
+            rotation: {
+                x: Number,
+                y: Number,
+                z: Number,
+                w: Number
+            },
             attributes: [{
                 name: String,
                 value: String

@@ -30,7 +30,7 @@ export default {
     },
     methods: {
       addAttribute: function() {
-        this.LevelObject.attributes.push({
+        this.LevelObject.attributes.unshift({
           name: '',
           value: ''
         })

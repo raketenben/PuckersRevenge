@@ -35,7 +35,7 @@ router.get('/', async (req, res) => {
 
 router.post('/', async (req, res) => {
   let unique = false;
-  //console.log(JSON.stringify(req.body.payload,null,4))
+  console.log(JSON.stringify(req.body.payload,null,4))
 
   await Object.find({name: req.body.payload.name},function (err, obj) {
     if(err) return console.error(err)
