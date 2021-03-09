@@ -1,3 +1,8 @@
+//const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
+const apiEndpoint = "";
+
+import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
+
 import HitboxGenerator from './hitboxGenerator.js';
 import assetManager from "./assetManager.js";
 
@@ -11,16 +16,18 @@ class levelLoader {
     renderer;
     physicsWorld;
 
+    currentEntryPosition;
+    currentExitPosition;
+
     constructor(){
-
-        this.hitboxGenerator = new HitboxGenerator();
         this.textureLoader = new THREE.TextureLoader();
-        this.gltfLoader = new THREE.GLTFLoader();
+        this.gltfLoader = new GLTFLoader();
         this.assetManager = new assetManager();
-
     }
 
-    init(_scene,_renderer,_physicsWorld){
+    init(_scene,_renderer,_physicsWorld,_defualtMaterial){
+        this.hitboxGenerator = new HitboxGenerator(_defualtMaterial);
+
         this.scene = _scene;
         this.renderer = _renderer;
         this.physicsWorld = _physicsWorld;
@@ -30,41 +37,41 @@ class levelLoader {
         })
     }
 
-    addObjectToScene(object,res,prog,rej){
+    addObjectToScene(object,offset,res,prog,rej){
         this.assetManager.retrieveObject(object.name,(asset) => {
             this.gltfLoader.load(asset.object, (gltf) => {
                 this.textureLoader.load(asset.env,(texture) => {
-                    fetch(asset.hitbox)
-                    .then(response => response.json())
-                    .then(hitbox => {
-                        //apply env map
-                        var cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024).fromEquirectangularTexture( this.renderer, texture );
-                        gltf.scene.traverse((node) => {
-                            if (node.isMesh) node.material.envMap = cubeRenderTarget.texture;
-                        });
-    
-                        //add hitbox
-                        let body = this.hitboxGenerator.bodyFromJSON(hitbox);
-                        body.position.copy(object.position)
-                        this.physicsWorld.addBody(body);
+                    //apply env map
+                    var cubeRenderTarget = new THREE.WebGLCubeRenderTarget(1024).fromEquirectangularTexture( this.renderer, texture );
+                    gltf.scene.traverse((node) => {
+                        if (node.isMesh) node.material.envMap = cubeRenderTarget.texture;
+                    });
 
-                        gltf.scene.position.copy(object.position)
-                        gltf.scene.userData.imposter = body;
+                    //add hitbox
+                    let body = this.hitboxGenerator.bodyFromJSON(asset.hitBoxes[0]);
+                    body.position.set(parseFloat(object.position.x)+offset.x,parseFloat(object.position.y)+offset.y,parseFloat(object.position.z)+offset.z)
+                    this.physicsWorld.addBody(body);
 
-                        //add object to scene
-                        this.scene.add( gltf.scene)
-    
-                        res();
-                    }).catch(rej);
+                    gltf.scene.position.copy(object.position)
+                    gltf.scene.position.add(offset)
+
+                    //add object to scene
+                    gltf.scene.name = asset.name;
+                    gltf.scene.userData.imposter = body;
+                    gltf.scene.userData.hitboxes = asset.hitBoxes;
+                    this.scene.add(gltf.scene);
+
+                    res();
                 },null,rej)
             },rej);
         },prog,rej);
     }
 
-    load(levelname,res,prog,rej){
+    load(levelname,offset,res,prog,rej){
         this.loadLevelFile(levelname,(levelFile) => {
             let total = levelFile.objects.length;
             let loaded = 0;
+
             function sendProgressUpdate(xhr){
                 xhr.objectTotal = total;
                 xhr.objectLoaded = loaded;
@@ -72,7 +79,7 @@ class levelLoader {
             }
 
             let nextLoad = () => {
-                this.addObjectToScene(levelFile.objects[loaded],() => {
+                this.addObjectToScene(levelFile.objects[loaded],offset,() => {
                     loaded++;
                     if(loaded == total) {
                         sendProgressUpdate({total:1,loaded:1,tag:"finished"})
@@ -88,7 +95,7 @@ class levelLoader {
     }
 
     loadLevelFile(levelName,res,rej){
-        fetch(`/levels/${levelName}.json`)
+        fetch(`${apiEndpoint}/api/level/${levelName}`)
         .then(response => response.json())
         .then(res,rej);
     }
