@@ -7,7 +7,7 @@ class inputManager {
     }
     states = [];
 
-    get =  (v) => {
+    get = (v) => {
         return this.states[v];
     }
 
