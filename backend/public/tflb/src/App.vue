@@ -6,6 +6,7 @@
     <select id="Path" v-model="path">
       <option value="object">Object</option>
       <option value="level">Level</option>
+      <option value="files">Files</option>
     </select>
 
     <fieldset>
@@ -19,7 +20,9 @@
     <div v-if="list">
       <List :path="path" />
     </div>
-
+    <div v-else-if="path == 'files'">
+      <Files />
+    </div>
     <div v-else>
       <Object v-if="path == 'object'" ref="formulars" :editElemet="editElemet"/>
       <Level v-if="path == 'level'" ref="formulars" :editElemet="editElemet"/>
@@ -35,13 +38,15 @@
 import Level from './components/Level.vue'
 import Object from  './components/Object.vue'
 import List from './components/List.vue'
+import Files from './components/Files.vue'
 
 export default {
   name: 'App',
   components: {
     Level,
     Object,
-    List
+    List,
+    Files
   },
   methods: {
     setElement: function(element) {

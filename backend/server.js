@@ -25,8 +25,11 @@ app.use('/api/object/', ObjectRoute)
 const LevelRoute = require('./routes/level')
 app.use('/api/level/', LevelRoute)
 
+const FilesRoute = require('./routes/files')
+app.use('/api/files/', FilesRoute)
+
 app.get('/', (req, res) => {
-  res.send('This is a api you should not visit this page. <br><b>Go away!!!<b>')
+  res.send('This is a api you should not visit this page. <br><b>Go away!!!!<b>')
 })
 
 app.listen(port, () => {
