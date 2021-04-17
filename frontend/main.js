@@ -165,11 +165,8 @@ function init() {
             console.log(scene.children[i+1].userData.hitboxes)
             //hitboxGenerator.updateBodyFromJSON(physicsWorld.bodies[i],scene.children[i+1].userData.hitboxes[1]);
 
-            currentEntryPosition = (new THREE.Vector3()).copy(levelFile.levelEntry);
-            currentExitPosition = (new THREE.Vector3()).copy(levelFile.levelExit);
-
-            console.log(currentEntryPosition)
-            console.log(currentExitPosition)
+            //currentEntryPosition = (new THREE.Vector3()).copy(levelFile.levelEntry);
+            //console.log(currentEntryPosition)
             
             console.log("finished loading");
             progressDisplay.classList.add("hidden");

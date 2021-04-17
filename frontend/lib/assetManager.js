@@ -1,5 +1,5 @@
-//const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
-const apiEndpoint = "";
+const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
+//const apiEndpoint = "";
 const databaseName = "PuckersRevenge";
 const databaseVersion = 2;
 const objectStoreName = "assets";
