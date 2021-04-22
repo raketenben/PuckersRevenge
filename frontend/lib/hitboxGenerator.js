@@ -55,10 +55,10 @@ class hitboxGenerator {
                     this.shape = new CANNON.Box(size);
                     break;
                 case 'sphere':
-                    this.shape = new CANNON.Sphere(shapeData.size);
+                    this.shape = new CANNON.Sphere(shapeData.size.x);
                     break;
                 case 'cylinder':
-                    this.shape = new CANNON.Cylinder(shapeData.size.topRadius,shapeData.size.bottomRadius,shapeData.offset.height,shapeData.offset.segments);
+                    this.shape = new CANNON.Cylinder(shapeData.size.x,shapeData.size.y,shapeData.size.z,16);
                     break;
                 default:
                     console.warn(`${shapeData.shape} is not a valid type`);

@@ -110,7 +110,7 @@ function init() {
 
     //add additional light to scene
     const hemiLight = new THREE.HemisphereLight(0xFFF9CC, 0x000000, 4);
-    scene.add(hemiLight);
+    //scene.add(hemiLight);
 
     //add user to scene
     camera = new THREE.PerspectiveCamera(90, window.innerWidth / window.innerHeight, 0.01, 10);
@@ -137,7 +137,7 @@ function init() {
     physicsWorld.addContactMaterial(defaultContactMaterial);
 
     //add hitbox
-    let shape1 = new CANNON.Sphere(0.15);
+    let shape1 = new CANNON.Sphere(0.075);
     playerBox = new CANNON.Body({ mass: 65 , material: playerMaterial});
     playerBox.angularDamping = 1;
     playerBox.type = CANNON.Body.DYNAMIC;
@@ -165,11 +165,17 @@ function init() {
             console.log(scene.children[i+1].userData.hitboxes)
             //hitboxGenerator.updateBodyFromJSON(physicsWorld.bodies[i],scene.children[i+1].userData.hitboxes[1]);
 
-            currentEntryPosition = (new THREE.Vector3()).copy(levelFile.levelEntry);
-            currentExitPosition = (new THREE.Vector3()).copy(levelFile.levelExit);
+            //currentEntryPosition = (new THREE.Vector3()).copy(levelFile.levelEntry);
+            //console.log(currentEntryPosition)
 
-            console.log(currentEntryPosition)
-            console.log(currentExitPosition)
+            for(let x in scene.children){
+                scene.children[x].traverse((obj) => {
+                    if(obj?.userData?.attributes?.interactable) {
+                        obj.index=x;
+                        iao.push(obj);
+                    }
+                });
+            }
             
             console.log("finished loading");
             progressDisplay.classList.add("hidden");
@@ -223,8 +229,8 @@ function sessionStarted(event){
     );
     user.add(controllerGrip2);
 
-    xrSession.addEventListener("selectstart",handleSelect);
-    xrSession.addEventListener("selectend",handleSelectEnd);
+    xrSession.addEventListener("squeezestart",handleSelect);
+    xrSession.addEventListener("squeezeend",handleSelectEnd);
 
     renderer.setAnimationLoop(drawFrame);
 }
@@ -401,33 +407,22 @@ function handleElevators(frame,delta,pose){
 
 //TODO:REWRITE
 function handleInteractions(frame,delta,pose){
-    //reset materials
-    for (const interactableObject of iao) {
-        if(interactableObject.materialKeep) interactableObject.material = interactableObject.materialKeep;
-    }
-    
     for (const source of xrSession.inputSources) {
         if(source.targetRaySpace){
             const targetRay = frame.getPose(source.targetRaySpace,xrReferenceSpace);
             
-            //console.log(targetRay.transform.position);
-            if(targetRay){
+            if(targetRay?.transform){
                 const targetRaySpace = transformToGlobalLocation(targetRay);
 
+                console.log(targetRaySpace)
                 //show item
                 if(holding[source.handedness] != null) {
-                    holding[source.handedness].position.copy(targetRaySpace.currentPosition);
+                    physicsWorld.bodies[holding[source.handedness].index].type = CANNON.Body.KINEMATIC;
+                    physicsWorld.bodies[holding[source.handedness].index].position.copy(targetRaySpace.currentPosition);
+                    console.log(physicsWorld.bodies[holding[source.handedness].index])
+                    physicsWorld.bodies[holding[source.handedness].index].quaternion.copy(targetRaySpace.orientation);
                     //holding[source.handedness].quaternion.copy(targetRaySpace.orientation);
                 }
-
-                for (const interactableObject of iao) {
-                    let distance = interactableObject.position.distanceTo(targetRaySpace.currentPosition);
-                    
-                    if(distance < 0.2 && !interactableObject.keepInteract) {
-                        if(!interactableObject.materialKeep) interactableObject.materialKeep = interactableObject.material;
-                        interactableObject.material = highlightMaterial;
-                    }
-                } 
             }
         }
     }
@@ -477,7 +472,7 @@ function handleSelect(eve){
         interactableObject.getWorldPosition(realPos);
         //marker1.position.copy(realPos);
         
-        console.log("eve",eve);
+        console.log("eve",eve,distance);
         if(distance < 0.2) {
             holding[eve.inputSource.handedness] = interactableObject;
         }
@@ -485,18 +480,8 @@ function handleSelect(eve){
 }
 
 function handleSelectEnd(eve){
-    const targetRay = eve.frame.getPose(eve.inputSource.targetRaySpace,xrReferenceSpace);
-    const targetRaySpace = transformToGlobalLocation(targetRay);
-    for (const interactableObject of iao) {
-                    
-        let distance = interactableObject.position.distanceTo(targetRaySpace.currentPosition);
-        let realPos = new THREE.Vector3();
-        interactableObject.getWorldPosition(realPos);
-        
-        if(distance < 0.2) {
-            if(holding[eve.inputSource.handedness]) holding[eve.inputSource.handedness] = null;
-        }
-    } 
+    physicsWorld.bodies[holding[eve.inputSource.handedness].index].type = CANNON.Body.DYNAMIC;
+    if(holding[eve.inputSource.handedness]) holding[eve.inputSource.handedness] = null;
 }
 
 //controller GAMEPAD (virtual player movement)
@@ -558,9 +543,11 @@ function updateAndMatchPhysics(delta,pose){
     physicsWorld.step(1 / 60,delta);
 
     //update object positions to physics
-    for (let i = 0; i < physicsWorld.bodies.length; i++)
-        if(scene.children[i+1]) 
-            scene.children[i+1].position.copy(physicsWorld.bodies[i].position);
+    for (let i = 1; i < physicsWorld.bodies.length; i++)
+        if(scene.children[i]){
+            scene.children[i].position.copy(physicsWorld.bodies[i].position);
+            scene.children[i].quaternion.copy(physicsWorld.bodies[i].quaternion);
+        }
 
     //get current Playe height
     playerHeight.setY(pose.transform.position.y);

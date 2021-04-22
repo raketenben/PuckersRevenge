@@ -1,5 +1,5 @@
-//const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
-const apiEndpoint = "";
+const apiEndpoint = "https://puckersrevenge.if-loop.mywire.org";
+//const apiEndpoint = "";
 
 import { GLTFLoader } from '../node_modules/three/examples/jsm/loaders/GLTFLoader.js';
 
@@ -49,16 +49,29 @@ class levelLoader {
 
                     //add hitbox
                     let body = this.hitboxGenerator.bodyFromJSON(asset.hitBoxes[0]);
-                    body.position.set(parseFloat(object.position.x)+offset.x,parseFloat(object.position.y)+offset.y,parseFloat(object.position.z)+offset.z)
+                    body.position.set(object.position.x+offset.x,object.position.y+offset.y,object.position.z+offset.z)
+                    body.quaternion = new CANNON.Quaternion().copy(object.rotation);
                     this.physicsWorld.addBody(body);
 
                     gltf.scene.position.copy(object.position)
                     gltf.scene.position.add(offset)
 
+                    gltf.scene.quaternion.copy(object.rotation);
+
                     //add object to scene
                     gltf.scene.name = asset.name;
                     gltf.scene.userData.imposter = body;
                     gltf.scene.userData.hitboxes = asset.hitBoxes;
+
+
+                    let _attributes = object.attributes;
+                    if(_attributes){
+                        if(!gltf.scene.userData) gltf.scene.userData = new Array();
+                        if(!gltf.scene.userData.attributes) gltf.scene.userData.attributes = {};
+                        for(let _attribute of _attributes){
+                            gltf.scene.userData.attributes[_attribute.name] = _attribute.value;
+                        }
+                    }
                     this.scene.add(gltf.scene);
 
                     res();
