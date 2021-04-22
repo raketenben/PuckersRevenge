@@ -26,7 +26,7 @@
     <div v-else>
       <Object v-if="path == 'object'" ref="formulars" :editElemet="editElemet"/>
       <Level v-if="path == 'level'" ref="formulars" :editElemet="editElemet"/>
-      <input type="submit" @click="submit" value="Create"/>
+      <input type="submit" @click="submit" :value="(editElemet == undefined) ? 'Create' : 'Update'"/>
     </div>
 
     <div v-text="msg"></div>
@@ -54,6 +54,8 @@ export default {
       this.list = false
     },
     submit: async function() {
+      this.error = ''
+      this.msg = ''
       //console.log(JSON.parse(JSON.stringify(this.$refs["formulars"][this.path])))
       let data = {}
       try {

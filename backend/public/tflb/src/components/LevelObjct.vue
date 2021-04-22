@@ -42,6 +42,14 @@ export default {
     created() {
        (this.LevelObject.attributes.length < 1)&&
         this.addAttribute()
+
+        if(this.LevelObject.rotation == undefined)
+        this.LevelObject.rotation = {
+          x: 0.0,
+          y: 0.0,
+          z: 0.0,
+          w: 0.0
+        }
     }
 }
 </script>

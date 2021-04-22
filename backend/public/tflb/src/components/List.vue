@@ -16,6 +16,8 @@ export default {
     },
     methods: {
     getElements: async function(){
+        this.error = ''
+        this.msg = ''
          const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/${this.path}`, {
             method: 'GET',
             mode: 'cors',
@@ -27,6 +29,8 @@ export default {
         this.elements = data
     },
     editElement: async function(name) {
+        this.error = ''
+        this.msg = ''
       const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/${this.path}/${name}`, {
             method: 'GET',
             mode: 'cors',
@@ -41,6 +45,8 @@ export default {
         this.$parent.setElement(data)
     },
     deleteElement: async function(name) {
+        this.error = ''
+        this.msg = ''
         const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/${this.path}/${name}`, {
             method: 'DELETE',
             mode: 'cors',

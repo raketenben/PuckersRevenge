@@ -39,6 +39,9 @@ export default {
   },
   methods: {
     getFileList: async function() {
+      this.error = ''
+      this.msg = ''
+
       const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/files`, {
             method: 'GET',
             mode: 'cors',
@@ -50,7 +53,9 @@ export default {
         this.fileTree = data
     },
     createNewFolder: async function (newName) {
-      console.log(newName);
+      this.error = ''
+      this.msg = ''
+
       const response = await fetch(`https://puckersrevenge.if-loop.mywire.org/api/files/createFolder/${newName}`, {
             method: 'POST',
             mode: 'cors',
@@ -66,6 +71,9 @@ export default {
         this.getFileList()
     },
     uploadFiles: async function () {
+      this.error = ''
+      this.msg = ''
+      
       if(!(this.files.length > 0)) {
         this.$parent.error = 'If you want to Upload a file you should select a file.'
         return;

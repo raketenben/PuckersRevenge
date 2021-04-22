@@ -32,9 +32,22 @@ export default {
         addShape: function () {
             this.$props.hitBox.shapes.unshift({
                     shape: 'box',
-                    size: {},
-                    position: {},
-                    rotation: {}
+                    size: {
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0
+                    },
+                    position: {
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0
+                    },
+                    rotation: {
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0,
+                        w: 0.0
+                    }
                 })
         }
     },

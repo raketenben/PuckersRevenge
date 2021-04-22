@@ -24,6 +24,15 @@ export default {
     },
     props: {
         shape: {}
+    },
+    created() {
+      if(this.shape.rotation == undefined)
+        this.shape.rotation = {
+          x: 0.0,
+          y: 0.0,
+          z: 0.0,
+          w: 0.0
+        }
     }
 }
 </script>

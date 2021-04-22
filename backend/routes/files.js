@@ -18,15 +18,14 @@ router.get('/', async (req, res) => {
 router.post('/createFolder/:name', async (req, res) => {
   if(!existsSync(`/var/www/puckersrevenge/resources/${req.params.name}`)){
     await mkdirSync(`/var/www/puckersrevenge/resources/${req.params.name}`)
-    res.json({msg: 'File has been created'})
+    res.json({msg: 'Folder has been created'})
   } else {
-    res.json({error: 'File already exist'})
+    res.json({error: 'Folder already exist'})
   }
 })
 
 router.post('/uploadFiles/:name', async (req, res) => {
   req.body.files.forEach( el => {
-    if(!existsSync(`/var/www/puckersrevenge/resources/${req.params.name}/${el.name}`))
       writeFile(`/var/www/puckersrevenge/resources/${req.params.name}/${el.name}`, el.data, 'binary', function(err){
         if(err) console.error(err)
         if(err) res.json({error: 'Error with a file'})

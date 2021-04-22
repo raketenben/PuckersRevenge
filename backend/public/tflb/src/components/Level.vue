@@ -3,6 +3,10 @@
     <h1>Level Stuff</h1>
     <p>Name</p> 
     <input type="text" v-model="level.name">
+
+    <p>Entry Point</p>
+    <Transform :values="level.levelEntry"/>
+
     <p>Objects <button @click="addLevelObject">Add</button></p>
     <div v-for="(LevelObject, index) in level.objects" :key="index">
       <LevelObject :LevelObject="LevelObject"/>
@@ -13,6 +17,7 @@
 
 <script>
 import LevelObject from './LevelObjct'
+import Transform from './Transform'
 
 export default {
     name: 'Level',
@@ -20,6 +25,7 @@ export default {
       editElemet: {}
     },
     components: {
+      Transform,
       LevelObject
     },
     methods: {
@@ -40,11 +46,24 @@ export default {
         this.level = this.editElemet
       else
         this.addLevelObject()
+
+      if(this.level.levelEntry == undefined)
+        this.level.levelEntry = {
+          x: 0.0,
+          y: 0.0,
+          z: 0.0,
+          w: 0.0
+        }
     },
     data() {
       return {
         level: {
           name: '',
+          levelEntry: {
+            x: 0.0,
+            y: 0.0,
+            z: 0.0
+          },
           objects: []
         }
       }

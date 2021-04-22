@@ -21,7 +21,12 @@ const LevelSchema = new mongoose.Schema({
                 value: String
             }]
         }
-    ]
+    ],
+    levelEntry: {
+        x: Number,
+        y: Number,
+        z: Number
+    }
 })
 module.exports = LevelSchema
 /**
