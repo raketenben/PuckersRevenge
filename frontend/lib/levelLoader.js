@@ -47,8 +47,6 @@ class levelLoader {
                         if (node.isMesh) node.material.envMap = cubeRenderTarget.texture;
                     });
 
-
-                    console.log(object,object.rotation)
                     //add hitbox
                     let body = this.hitboxGenerator.bodyFromJSON(asset.hitBoxes[0]);
                     body.position.set(object.position.x+offset.x,object.position.y+offset.y,object.position.z+offset.z)
@@ -64,6 +62,16 @@ class levelLoader {
                     gltf.scene.name = asset.name;
                     gltf.scene.userData.imposter = body;
                     gltf.scene.userData.hitboxes = asset.hitBoxes;
+
+
+                    let _attributes = object.attributes;
+                    if(_attributes){
+                        if(!gltf.scene.userData) gltf.scene.userData = new Array();
+                        if(!gltf.scene.userData.attributes) gltf.scene.userData.attributes = {};
+                        for(let _attribute of _attributes){
+                            gltf.scene.userData.attributes[_attribute.name] = _attribute.value;
+                        }
+                    }
                     this.scene.add(gltf.scene);
 
                     res();
