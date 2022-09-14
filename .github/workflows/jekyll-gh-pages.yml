@@ -20,15 +20,14 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          path: frontend
+      - name: Checkout      
+        - uses: Bhacaz/checkout-files@v2
+          with:
+          files: frontend
           
       - name: Install and Build 🔧
         run: |
-          npm ci
-          npm run build
+          npm install
     
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@v4
