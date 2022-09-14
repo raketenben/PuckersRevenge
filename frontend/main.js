@@ -8,47 +8,47 @@ const enterVrButton = document.getElementById("enterVR");
 const enterDesktopButton = document.getElementById("enterDesktop");
 const progressDisplay = document.getElementById("progress");
 
-function updateButtons(){
-    if(navigator.xr){
-        navigator.xr.isSessionSupported( 'immersive-vr' ).then( function ( supported ) {
-            if(supported){
+function updateButtons() {
+    if (navigator.xr) {
+        navigator.xr.isSessionSupported('immersive-vr').then(function(supported) {
+            if (supported) {
                 enterVrButton.classList.remove("hidden");
-            }else{
+            } else {
                 enterVrButton.innerHTML = "VR not supported";
                 enterDesktopButton.classList.remove("hidden");
             }
         });
-    }else{
+    } else {
         enterVrButton.innerHTML = "VR not supported";
     }
 }
 
 //xr session events   
-enterVrButton.addEventListener("click",function(){
-    const sessionInit = { optionalFeatures: [ 'local-floor', 'bounded-floor', 'hand-tracking' ] };
-    if(!xrSession){
-        navigator.xr.requestSession( 'immersive-vr', sessionInit ).then((ses) => {
+enterVrButton.addEventListener("click", function() {
+    const sessionInit = { optionalFeatures: ['local-floor', 'bounded-floor', 'hand-tracking'] };
+    if (!xrSession) {
+        navigator.xr.requestSession('immersive-vr', sessionInit).then((ses) => {
             renderer.xr.setSession(ses);
         });
-    }else{
+    } else {
         enterVrButton.innerHTML = "Enter VR";
         xrSession.end();
     }
 });
 
-enterDesktopButton.addEventListener("click",onDesktopStart);
+enterDesktopButton.addEventListener("click", onDesktopStart);
 
 //physics materials
 const defaultMaterial = new CANNON.Material({ name: "default" });
 const playerMaterial = new CANNON.Material({ name: "player" });
-const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial,playerMaterial,{
+const defaultContactMaterial = new CANNON.ContactMaterial(defaultMaterial, playerMaterial, {
     friction: 0.01,
     restitution: 0.0,
 });
 
 //desktop player settings
 const playerHeightDesktop = 1.55;
-const playerMouseSenseDesktop = (Math.PI/180)*0.25;
+const playerMouseSenseDesktop = (Math.PI / 180) * 0.25;
 const playerCursorRadiusDesktop = 64;
 
 //player settings
@@ -56,10 +56,10 @@ const playerSpeed = 1.5;
 const playerSprintFactor = 1;
 const playerZoomFactorDektop = 4;
 const playerRotationTimeout = 350;
-const playerRotationAngle = (Math.PI/180) * 30;
+const playerRotationAngle = (Math.PI / 180) * 30;
 
 //interaction settings
-const highlightMaterial = new THREE.MeshBasicMaterial( { color: 0xffc100 } );
+const highlightMaterial = new THREE.MeshBasicMaterial({ color: 0xffc100 });
 
 //LEVEL loading (travel)
 const elevatorTravelDistance = 100;
@@ -69,27 +69,27 @@ const elevatorTravelSpeed = 5;
 const elevatorParticleSquare = 10;
 const elevatorParticleHeight = 500;
 const elevatorParticlesCount = 4000;
-const elevatorParticleMaterial = new THREE.PointsMaterial({ color: 0x333333,size: 0.005});
+const elevatorParticleMaterial = new THREE.PointsMaterial({ color: 0x333333, size: 0.005 });
 
 const levelLoader = new LevelLoader();
 const controllerModelFactory = new XRControllerModelFactory();
 
 const raycaster = new THREE.Raycaster();
 
-let playerHeight = new THREE.Vector3(0,0,0);
+let playerHeight = new THREE.Vector3(0, 0, 0);
 
 let hitboxGenerator = new HitboxGenerator(defaultMaterial);
 let inputManager = new InputManager();
 
 let currentEntryPosition;
-let currentExitPosition; 
+let currentExitPosition;
 
 let stats, clock;
 let camera, camera1, scene, renderer;
 let xrSession, xrReferenceSpace;
 let user;
 let physicsWorld, playerBox, testChamber;
-let holding = {left:null,right:null};
+let holding = { left: null, right: null };
 
 let cannonDebug;
 
@@ -102,10 +102,11 @@ let particleSystems = new Array();
 let physicsObjects = new Array();
 
 init();
+
 function init() {
     //scene settings
     scene = new THREE.Scene();
-    scene.fog = new THREE.FogExp2(0x000,0.1);
+    scene.fog = new THREE.FogExp2(0x000, 0.1);
     scene.background = new THREE.Color("#000000");
 
     //add additional light to scene
@@ -119,9 +120,9 @@ function init() {
     scene.add(user);
 
     //setup renderer
-    renderer = new THREE.WebGLRenderer({ canvas:canvas, antialias: false, powerPreference: "high-performance", precision:"highp"});
+    renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: false, powerPreference: "high-performance", precision: "highp" });
     renderer.xr.enabled = true;
-    renderer.xr.setReferenceSpaceType( 'local-floor' );
+    renderer.xr.setReferenceSpaceType('local-floor');
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.physicallyCorrectLights = true;
     renderer.outputEncoding = THREE.sRGBEncoding;
@@ -131,25 +132,25 @@ function init() {
 
     //physics
     physicsWorld = new CANNON.World();
-    physicsWorld.gravity.set(0,-9.82,0);
+    physicsWorld.gravity.set(0, -9.82, 0);
     physicsWorld.broadphase = new CANNON.NaiveBroadphase();
     physicsWorld.defaultContactMaterial = defaultContactMaterial;
     physicsWorld.addContactMaterial(defaultContactMaterial);
 
     //add hitbox
     let shape1 = new CANNON.Sphere(0.075);
-    playerBox = new CANNON.Body({ mass: 65 , material: playerMaterial});
+    playerBox = new CANNON.Body({ mass: 65, material: playerMaterial });
     playerBox.angularDamping = 1;
     playerBox.type = CANNON.Body.DYNAMIC;
     playerBox.position.y = 0.01;
 
-    playerBox.addShape(shape1,new CANNON.Vec3(0,0.10,0));
+    playerBox.addShape(shape1, new CANNON.Vec3(0, 0.10, 0));
     physicsWorld.addBody(playerBox);
 
     //utilities
     stats = new Stats();
     clock = new THREE.Clock();
-    cannonDebug = new THREE.CannonDebugRenderer( scene, physicsWorld );
+    cannonDebug = new THREE.CannonDebugRenderer(scene, physicsWorld);
 
     //show stats
     document.body.appendChild(stats.domElement);
@@ -158,33 +159,33 @@ function init() {
     renderer.xr.addEventListener('sessionend', sessionEnded);
 
     //level loader
-    levelLoader.init(scene,renderer,physicsWorld,defaultMaterial).then(() => {
-        levelLoader.load("test1",new THREE.Vector3(0,0,0),(levelFile) => {
+    levelLoader.init(scene, renderer, physicsWorld, defaultMaterial).then(() => {
+        levelLoader.load("test1", new THREE.Vector3(0, 0, 0), (levelFile) => {
 
             let i = 1;
-            console.log(scene.children[i+1].userData.hitboxes)
-            //hitboxGenerator.updateBodyFromJSON(physicsWorld.bodies[i],scene.children[i+1].userData.hitboxes[1]);
+            console.log(scene.children[i + 1].userData.hitboxes)
+                //hitboxGenerator.updateBodyFromJSON(physicsWorld.bodies[i],scene.children[i+1].userData.hitboxes[1]);
 
             //currentEntryPosition = (new THREE.Vector3()).copy(levelFile.levelEntry);
             //console.log(currentEntryPosition)
 
-            for(let x in scene.children){
+            for (let x in scene.children) {
                 scene.children[x].traverse((obj) => {
-                    if(obj?.userData?.attributes?.interactable) {
-                        obj.index=x;
+                    if (obj?.userData ?.attributes ?.interactable) {
+                        obj.index = x;
                         iao.push(obj);
                     }
                 });
             }
-            
+
             console.log("finished loading");
             progressDisplay.classList.add("hidden");
             renderer.render(scene, camera);
-        },(xhr) => {
+        }, (xhr) => {
             let progress = Math.round((xhr.loaded / xhr.total) * 1000) / 10;
             progressDisplay.innerHTML = `Object ${xhr.objectLoaded}/${xhr.objectTotal} </br> ${progress} % - ${xhr.tag}`;
             updateButtons();
-        },(err) => {
+        }, (err) => {
             console.error(err)
         })
     });
@@ -196,21 +197,22 @@ document.addEventListener("visibilitychange", function() {
     }
 });
 
-window.addEventListener( 'resize', onWindowResize, false );
-function onWindowResize(){
+window.addEventListener('resize', onWindowResize, false);
+
+function onWindowResize() {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
 
-    renderer.setSize( window.innerWidth, window.innerHeight );
+    renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
-function sessionEnded(){
+function sessionEnded() {
     xrSession = null;
     enterVrButton.innerHTML = "Enter VR";
     renderer.setAnimationLoop(null);
 }
 
-function sessionStarted(event){
+function sessionStarted(event) {
     xrSession = event.target.getSession();
     xrReferenceSpace = renderer.xr.getReferenceSpace();
 
@@ -229,68 +231,70 @@ function sessionStarted(event){
     );
     user.add(controllerGrip2);
 
-    xrSession.addEventListener("squeezestart",handleSelect);
-    xrSession.addEventListener("squeezeend",handleSelectEnd);
+    xrSession.addEventListener("squeezestart", handleSelect);
+    xrSession.addEventListener("squeezeend", handleSelectEnd);
 
     renderer.setAnimationLoop(drawFrame);
 }
 
 let pointerLockState = false;
-function onDesktopStart(){
+
+function onDesktopStart() {
     document.getElementById("ui").classList.add("hidden")
     camera.position.y = playerHeightDesktop;
-    
+
     document.addEventListener('pointerlockchange', pointerLockChanged, false);
 
     renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock;
     renderer.domElement.requestPointerLock();
 
-    document.addEventListener("mousemove",  handleMousemovementDesktop, false);
+    document.addEventListener("mousemove", handleMousemovementDesktop, false);
     //document.addEventListener('keydown', handleKeyDownDesktop, false);
     //document.addEventListener('keyup', handleKeyUpDesktop, false);
-    document.addEventListener("click",  recaptureMouse, false);
+    document.addEventListener("click", recaptureMouse, false);
 
     clock.getDelta()
 
     renderer.setAnimationLoop(drawDesktopFrame);
 }
 
-function pointerLockChanged(){
-    if(document.pointerLockElement === renderer.domElement){
+function pointerLockChanged() {
+    if (document.pointerLockElement === renderer.domElement) {
         pointerLockState = true;
-    }else{
+    } else {
         pointerLockState = false;
     }
 }
 
-function recaptureMouse(){
+function recaptureMouse() {
     renderer.domElement.requestPointerLock = renderer.domElement.requestPointerLock || renderer.domElement.mozRequestPointerLock;
     renderer.domElement.requestPointerLock();
 }
 
-function handleInteractionsDesktop(v){
-    raycaster.setFromCamera(new THREE.Vector2(),camera);
-    const objects = raycaster.intersectObjects( scene.children );
+function handleInteractionsDesktop(v) {
+    raycaster.setFromCamera(new THREE.Vector2(), camera);
+    const objects = raycaster.intersectObjects(scene.children);
 
     for (const hit of objects) {
         //console.log(hit.object);
     }
 }
 
-let playerDesktopView = [0,0];
-function handleMousemovementDesktop(e){
-    if(pointerLockState == true) {
-        if(e.movementX > playerCursorRadiusDesktop) return;
-        if(e.movementX < -playerCursorRadiusDesktop) return;
-        if(e.movementY > playerCursorRadiusDesktop) return;
-        if(e.movementY < -playerCursorRadiusDesktop) return;
+let playerDesktopView = [0, 0];
+
+function handleMousemovementDesktop(e) {
+    if (pointerLockState == true) {
+        if (e.movementX > playerCursorRadiusDesktop) return;
+        if (e.movementX < -playerCursorRadiusDesktop) return;
+        if (e.movementY > playerCursorRadiusDesktop) return;
+        if (e.movementY < -playerCursorRadiusDesktop) return;
 
         playerDesktopView[0] -= e.movementX * playerMouseSenseDesktop;
-        if(
-            playerDesktopView[1] - e.movementY * playerMouseSenseDesktop < Math.PI/2 && 
-            playerDesktopView[1] - e.movementY * playerMouseSenseDesktop > -Math.PI/2
+        if (
+            playerDesktopView[1] - e.movementY * playerMouseSenseDesktop < Math.PI / 2 &&
+            playerDesktopView[1] - e.movementY * playerMouseSenseDesktop > -Math.PI / 2
         ) playerDesktopView[1] -= e.movementY * playerMouseSenseDesktop;
-    
+
         const euler = new THREE.Euler(0, 0, 0, 'YXZ');
         euler.x = playerDesktopView[1];
         euler.y = playerDesktopView[0];
@@ -298,17 +302,17 @@ function handleMousemovementDesktop(e){
     }
 }
 
-function handleInputsDesktop(){
+function handleInputsDesktop() {
     //get gamepad input
-    offsetPos.set((inputManager.get("a") ? -1 : (inputManager.get("d") ? 1 : 0)),0,(inputManager.get("w") ? -1 : (inputManager.get("s") ? 1 : 0)));
+    offsetPos.set((inputManager.get("a") ? -1 : (inputManager.get("d") ? 1 : 0)), 0, (inputManager.get("w") ? -1 : (inputManager.get("s") ? 1 : 0)));
 
     //slow down if multiple directions
-    offsetPos.multiplyScalar(1.2*((Math.abs(Math.abs(offsetPos.x)-Math.abs(offsetPos.z))/2)+0.5));
+    offsetPos.multiplyScalar(1.2 * ((Math.abs(Math.abs(offsetPos.x) - Math.abs(offsetPos.z)) / 2) + 0.5));
 
     //apply playerSpeed
     offsetPos.multiplyScalar(playerSpeed);
-    if(inputManager.get("control")) offsetPos.multiplyScalar(playerSprintFactor);
-    
+    if (inputManager.get("control")) offsetPos.multiplyScalar(playerSprintFactor);
+
     //apply head rotation and camera parent rotation
     offsetPos.applyQuaternion(camera.quaternion);
     //offsetPos.applyQuaternion(user.quaternion);
@@ -318,18 +322,19 @@ function handleInputsDesktop(){
     playerBox.velocity.z = offsetPos.z;
 }
 
-function findClipsByName(animations,names) {
+function findClipsByName(animations, names) {
     var ret = new Array();
     for (const i in names) {
-        var clip = THREE.AnimationClip.findByName( animations, names[i] );
-        if(clip) ret.push(clip);
+        var clip = THREE.AnimationClip.findByName(animations, names[i]);
+        if (clip) ret.push(clip);
     }
     return ret;
 }
 
 let delta = 0;
 let pose = null;
-function drawFrame(frameTime,frame){
+
+function drawFrame(frameTime, frame) {
     stats.begin();
 
     delta = clock.getDelta();
@@ -339,11 +344,11 @@ function drawFrame(frameTime,frame){
     //mixer.update( delta);
 
     //handleElevators(frame,delta,pose);
-    
-    handleInputs(frame,delta,pose);
-    handleInteractions(frame,delta,pose);
 
-    updateAndMatchPhysics(delta,pose);
+    handleInputs(frame, delta, pose);
+    handleInteractions(frame, delta, pose);
+
+    updateAndMatchPhysics(delta, pose);
 
     //cannonDebug.update();
 
@@ -351,38 +356,38 @@ function drawFrame(frameTime,frame){
     stats.end();
 }
 
-function drawDesktopFrame(frameTime,frame){
+function drawDesktopFrame(frameTime, frame) {
 
     delta = clock.getDelta();
-    pose = {transform:{position:{x:0,y:playerHeightDesktop,z:0}}};
+    pose = { transform: { position: { x: 0, y: playerHeightDesktop, z: 0 } } };
 
-    if(pointerLockState == true){
+    if (pointerLockState == true) {
         stats.begin();
         //animations
         //mixer.update(delta);
 
         //handleElevators(frame,delta,pose);
-        
-        handleInputsDesktop(frame,delta);
-        handleInteractionsDesktop(frame,delta);
 
-        updateAndMatchPhysics(delta,pose);
+        handleInputsDesktop(frame, delta);
+        handleInteractionsDesktop(frame, delta);
+
+        updateAndMatchPhysics(delta, pose);
 
         //cannonDebug.update();
 
         renderer.render(scene, camera);
 
         stats.end();
-    } 
+    }
 
 }
 
-function handleElevators(frame,delta,pose){
+function handleElevators(frame, delta, pose) {
 
     for (let c = 0; c < particleSystems.length; c++) {
-        for(var x = 0; x < particleSystems[c].geometry.vertices.length; x++){
-            if (particleSystems[c].geometry.vertices[x].y > (elevatorParticleHeight*0.5)) {
-                particleSystems[c].geometry.vertices[x].y = -(elevatorParticleHeight*0.5);
+        for (var x = 0; x < particleSystems[c].geometry.vertices.length; x++) {
+            if (particleSystems[c].geometry.vertices[x].y > (elevatorParticleHeight * 0.5)) {
+                particleSystems[c].geometry.vertices[x].y = -(elevatorParticleHeight * 0.5);
             }
             //particleSystems[c].geometry.vertices[x].y += elevatorTravelSpeed * delta;
         }
@@ -391,14 +396,14 @@ function handleElevators(frame,delta,pose){
 
     //elevator
     for (let c = 0; c < elevators.length; c++) {
-        if(elevators[c].userData.traveling){
-            if(elevators[c].userData.acceleration < elevatorTravelSpeed) elevators[c].userData.acceleration *= elevatorAcceleration;
+        if (elevators[c].userData.traveling) {
+            if (elevators[c].userData.acceleration < elevatorTravelSpeed) elevators[c].userData.acceleration *= elevatorAcceleration;
             elevators[c].userData.traveledDistance += elevators[c].userData.acceleration * delta;
             testChamber.velocity.y = -elevators[c].userData.acceleration;
-            if(elevators[c].userData.traveledDistance > elevatorTravelDistance){
+            if (elevators[c].userData.traveledDistance > elevatorTravelDistance) {
                 elevators[c].userData.traveling = false;
-            } 
-        }else{
+            }
+        } else {
             testChamber.velocity.y = 0;
         }
         elevators[c].position.copy(testChamber.position);
@@ -406,17 +411,17 @@ function handleElevators(frame,delta,pose){
 }
 
 //TODO:REWRITE
-function handleInteractions(frame,delta,pose){
+function handleInteractions(frame, delta, pose) {
     for (const source of xrSession.inputSources) {
-        if(source.targetRaySpace){
-            const targetRay = frame.getPose(source.targetRaySpace,xrReferenceSpace);
-            
-            if(targetRay?.transform){
+        if (source.targetRaySpace) {
+            const targetRay = frame.getPose(source.targetRaySpace, xrReferenceSpace);
+
+            if (targetRay ?.transform) {
                 const targetRaySpace = transformToGlobalLocation(targetRay);
 
                 console.log(targetRaySpace)
-                //show item
-                if(holding[source.handedness] != null) {
+                    //show item
+                if (holding[source.handedness] != null) {
                     physicsWorld.bodies[holding[source.handedness].index].type = CANNON.Body.KINEMATIC;
                     physicsWorld.bodies[holding[source.handedness].index].position.copy(targetRaySpace.currentPosition);
                     console.log(physicsWorld.bodies[holding[source.handedness].index])
@@ -428,7 +433,7 @@ function handleInteractions(frame,delta,pose){
     }
 }
 
-function startElevatorTravel(elevator){
+function startElevatorTravel(elevator) {
     elevator.userData.traveling = true;
     elevator.userData.traveledDistance = 0;
     elevator.userData.acceleration = elevatorIntialVelocity;
@@ -438,74 +443,75 @@ function startElevatorTravel(elevator){
     //ground.aabbNeedsUpdate = true;
 
     let particle = generateElevatorParticles(new THREE.Vector3());
-    
+
     particleSystems.push(particle);
     scene.add(particle);
 }
 
-function generateElevatorParticles(vec){
+function generateElevatorParticles(vec) {
     let particles = new THREE.Geometry();
     //particles
     for (var p = 0; p < elevatorParticlesCount; p++) {
         // create a particle with random
-        var pX = Math.random() * elevatorParticleSquare - (elevatorParticleSquare*0.5),
-            pY = Math.random() * elevatorParticleHeight - (elevatorParticleHeight*0.5),
-            pZ = Math.random() * elevatorParticleSquare - (elevatorParticleSquare*0.5),
+        var pX = Math.random() * elevatorParticleSquare - (elevatorParticleSquare * 0.5),
+            pY = Math.random() * elevatorParticleHeight - (elevatorParticleHeight * 0.5),
+            pZ = Math.random() * elevatorParticleSquare - (elevatorParticleSquare * 0.5),
             particle = new THREE.Vector3(pX, pY, pZ);
-            particle.add(vec);
+        particle.add(vec);
         // add it to the geometry
         particles.vertices.push(particle);
     }
-    let particleSystem = new THREE.Points(particles,elevatorParticleMaterial);
-    
+    let particleSystem = new THREE.Points(particles, elevatorParticleMaterial);
+
     return particleSystem;
 }
 
-function handleSelect(eve){
-    const targetRay = eve.frame.getPose(eve.inputSource.targetRaySpace,xrReferenceSpace);
+function handleSelect(eve) {
+    const targetRay = eve.frame.getPose(eve.inputSource.targetRaySpace, xrReferenceSpace);
     const targetRaySpace = transformToGlobalLocation(targetRay);
     for (const interactableObject of iao) {
-                    
+
         let distance = interactableObject.position.distanceTo(targetRaySpace.currentPosition);
         //marker.position.copy(targetRaySpace.currentPosition);
         let realPos = new THREE.Vector3();
         interactableObject.getWorldPosition(realPos);
         //marker1.position.copy(realPos);
-        
-        console.log("eve",eve,distance);
-        if(distance < 0.2) {
+
+        console.log("eve", eve, distance);
+        if (distance < 0.2) {
             holding[eve.inputSource.handedness] = interactableObject;
         }
-    } 
+    }
 }
 
-function handleSelectEnd(eve){
+function handleSelectEnd(eve) {
     physicsWorld.bodies[holding[eve.inputSource.handedness].index].type = CANNON.Body.DYNAMIC;
-    if(holding[eve.inputSource.handedness]) holding[eve.inputSource.handedness] = null;
+    if (holding[eve.inputSource.handedness]) holding[eve.inputSource.handedness] = null;
 }
 
 //controller GAMEPAD (virtual player movement)
-function handleInputs(frame,delta,pose){
+function handleInputs(frame, delta, pose) {
     let playerHeadSpace = transformToGlobalLocation(pose);
     //iterate all available input devices
     for (const source of xrSession.inputSources) {
         const axes = source.gamepad.axes;
 
         //check if joycon input available
-        if(axes[2] && axes[3]){
-            if(source.handedness === "left"){
-                handleLeftGamepadInput(playerHeadSpace,axes[2],axes[3]);
-            }else if(source.handedness === "right"){
-                handleRightGamepadInput(playerHeadSpace,axes[2],axes[3]);
+        if (axes[2] && axes[3]) {
+            if (source.handedness === "left") {
+                handleLeftGamepadInput(playerHeadSpace, axes[2], axes[3]);
+            } else if (source.handedness === "right") {
+                handleRightGamepadInput(playerHeadSpace, axes[2], axes[3]);
             }
         }
     }
 }
 
 let offsetPos = new THREE.Vector3();
-function handleLeftGamepadInput(playerHeadSpace,xAxis,yAxis){
+
+function handleLeftGamepadInput(playerHeadSpace, xAxis, yAxis) {
     //get gamepad input
-    offsetPos.set(xAxis,0,yAxis);
+    offsetPos.set(xAxis, 0, yAxis);
 
     //apply playerSpeed
     offsetPos.multiplyScalar(playerSpeed);
@@ -518,19 +524,20 @@ function handleLeftGamepadInput(playerHeadSpace,xAxis,yAxis){
     playerBox.velocity.z = offsetPos.z;
 }
 
-const yVector = new THREE.Vector3(0,1,0);
+const yVector = new THREE.Vector3(0, 1, 0);
 let timeout;
 let allowRotation = true;
-function handleRightGamepadInput(playerHeadSpace,xAxis,yAxis){
-    if(xAxis > -0.5 && xAxis < 0.5){
+
+function handleRightGamepadInput(playerHeadSpace, xAxis, yAxis) {
+    if (xAxis > -0.5 && xAxis < 0.5) {
         allowRotation = true;
         clearInterval(timeout);
-    }else{
-        if(allowRotation){
+    } else {
+        if (allowRotation) {
             allowRotation = false;
             const angle = (xAxis > 0) ? -playerRotationAngle : playerRotationAngle;
-            user.rotateAroundWorldAxis(playerHeadSpace.currentPosition,yVector,angle);
-            timeout = setTimeout(function(){allowRotation = true;},playerRotationTimeout);
+            user.rotateAroundWorldAxis(playerHeadSpace.currentPosition, yVector, angle);
+            timeout = setTimeout(function() { allowRotation = true; }, playerRotationTimeout);
         }
     }
 }
@@ -538,18 +545,19 @@ function handleRightGamepadInput(playerHeadSpace,xAxis,yAxis){
 //physics and real position matching(real player movements)
 let deltaPosition = new THREE.Vector3();
 let rotatedDelta = new THREE.Vector3();
-function updateAndMatchPhysics(delta,pose){
+
+function updateAndMatchPhysics(delta, pose) {
     //update physics world
-    physicsWorld.step(1 / 60,delta);
+    physicsWorld.step(1 / 60, delta);
 
     //update object positions to physics
     for (let i = 1; i < physicsWorld.bodies.length; i++)
-        if(scene.children[i]){
+        if (scene.children[i]) {
             scene.children[i].position.copy(physicsWorld.bodies[i].position);
             scene.children[i].quaternion.copy(physicsWorld.bodies[i].quaternion);
         }
 
-    //get current Playe height
+        //get current Playe height
     playerHeight.setY(pose.transform.position.y);
 
     //calculate movement delta
@@ -558,49 +566,51 @@ function updateAndMatchPhysics(delta,pose){
     rotatedDelta.setY(0);
     rotatedDelta.applyQuaternion(user.quaternion);
 
-    playerBox.position.vsub(rotatedDelta,playerBox.position);
+    playerBox.position.vsub(rotatedDelta, playerBox.position);
     //reset delta
     deltaPosition.copy(pose.transform.position);
 
     //match current Playerposition to physical Position
-    moveVirtualPlayerToMatch(pose,playerBox.position);
+    moveVirtualPlayerToMatch(pose, playerBox.position);
 }
 
 let rotatedTransformVector = new THREE.Vector3();
 let currentTransformVector = new THREE.Vector3();
-function transformToGlobalLocation(space){
+
+function transformToGlobalLocation(space) {
     rotatedTransformVector.copy(space.transform.position).applyQuaternion(user.quaternion);
     currentTransformVector.copy(user.position).add(rotatedTransformVector);
 
-    return {orientation:space.transform.orientation,currentPosition:currentTransformVector};
+    return { orientation: space.transform.orientation, currentPosition: currentTransformVector };
 }
 
 let rotatedLocalPosition = new THREE.Vector3();
 let virtualMatchPosition = new THREE.Vector3();
-function moveVirtualPlayerToMatch(space, position){
+
+function moveVirtualPlayerToMatch(space, position) {
     rotatedLocalPosition.copy(space.transform.position).applyQuaternion(user.quaternion);
     virtualMatchPosition.copy(position).add(rotatedLocalPosition.negate());
 
     user.position.copy(virtualMatchPosition.add(playerHeight));
-} 
+}
 
 //support functions
-THREE.Object3D.prototype.getObjectByUserDataProperty = function ( name, value ) {
+THREE.Object3D.prototype.getObjectByUserDataProperty = function(name, value) {
     var list = new Array();
 
-	if ( this.userData[ name ] === value ) return this;
-	for ( var i = 0, l = this.children.length; i < l; i ++ ) {
+    if (this.userData[name] === value) return this;
+    for (var i = 0, l = this.children.length; i < l; i++) {
 
-		var child = this.children[ i ];
-		var object = child.getObjectByUserDataProperty( name, value );
+        var child = this.children[i];
+        var object = child.getObjectByUserDataProperty(name, value);
 
-		if ( object !== undefined ) {
-            if(Array.isArray(object)){
+        if (object !== undefined) {
+            if (Array.isArray(object)) {
                 list = list.concat(object);
-            }else{
+            } else {
                 list.push(object);
             }
-		}
+        }
     }
     return list;
 }
@@ -613,14 +623,14 @@ THREE.Object3D.prototype.rotateAroundWorldAxis = function() {
 
     var q = new THREE.Quaternion();
 
-    return function rotateAroundWorldAxis( point, axis, angle ) {
-        q.setFromAxisAngle( axis, angle );
+    return function rotateAroundWorldAxis(point, axis, angle) {
+        q.setFromAxisAngle(axis, angle);
 
-        this.applyQuaternion( q );
+        this.applyQuaternion(q);
 
-        this.position.sub( point );
-        this.position.applyQuaternion( q );
-        this.position.add( point );
+        this.position.sub(point);
+        this.position.applyQuaternion(q);
+        this.position.add(point);
 
         return this;
     }
