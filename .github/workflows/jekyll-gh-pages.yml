@@ -21,8 +21,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout      
-        - uses: Bhacaz/checkout-files@v2
-          with:
+        uses: Bhacaz/checkout-files@v2
+        with:
           files: frontend
           
       - name: Install and Build 🔧
