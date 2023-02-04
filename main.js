@@ -171,7 +171,7 @@ function init() {
 
             for (let x in scene.children) {
                 scene.children[x].traverse((obj) => {
-                    if (obj?.userData ?.attributes ?.interactable) {
+                    if (obj?.userData?.attributes?.interactable) {
                         obj.index = x;
                         iao.push(obj);
                     }
@@ -416,7 +416,7 @@ function handleInteractions(frame, delta, pose) {
         if (source.targetRaySpace) {
             const targetRay = frame.getPose(source.targetRaySpace, xrReferenceSpace);
 
-            if (targetRay ?.transform) {
+            if (targetRay?.transform) {
                 const targetRaySpace = transformToGlobalLocation(targetRay);
 
                 console.log(targetRaySpace)
@@ -494,16 +494,19 @@ function handleInputs(frame, delta, pose) {
     let playerHeadSpace = transformToGlobalLocation(pose);
     //iterate all available input devices
     for (const source of xrSession.inputSources) {
-        const axes = source.gamepad.axes;
+        const axes = source?.gamepad?.axes;
 
-        //check if joycon input available
-        if (axes[2] && axes[3]) {
-            if (source.handedness === "left") {
-                handleLeftGamepadInput(playerHeadSpace, axes[2], axes[3]);
-            } else if (source.handedness === "right") {
-                handleRightGamepadInput(playerHeadSpace, axes[2], axes[3]);
+        if (axes) {
+            //check if joycon input available
+            if (axes[2] && axes[3]) {
+                if (source.handedness === "left") {
+                    handleLeftGamepadInput(playerHeadSpace, axes[2], axes[3]);
+                } else if (source.handedness === "right") {
+                    handleRightGamepadInput(playerHeadSpace, axes[2], axes[3]);
+                }
             }
         }
+
     }
 }
 
